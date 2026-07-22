@@ -4435,6 +4435,371 @@
       border-color: #1b1825;
     }
 
+  
+    /* Аватары */
+    .profile-avatar,
+    .avatar,
+    .settings-account-avatar,
+    .avatar-editor-preview,
+    .public-profile-card .profile-avatar,
+    .user-search-avatar,
+    .feed-share-avatar,
+    .contact-mini-avatar,
+    .chat-avatar,
+    .comment-avatar {
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+
+    .has-avatar {
+      color: transparent !important;
+      text-shadow: none !important;
+    }
+
+    /* Редактирование профиля */
+    .edit-profile-button {
+      width: 100%;
+      min-height: 43px;
+      margin-top: 10px;
+      border: 1px solid rgba(112,80,255,.20);
+      border-radius: 14px;
+      color: var(--primary);
+      background: rgba(112,80,255,.08);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .edit-profile-dialog,
+    .edit-joke-dialog {
+      width: min(94vw, 510px);
+      max-height: 90vh;
+      padding: 0;
+      border: 0;
+      border-radius: 28px;
+      background: transparent;
+    }
+
+    .edit-profile-dialog::backdrop,
+    .edit-joke-dialog::backdrop {
+      background: rgba(28,21,47,.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .edit-profile-dialog-inner,
+    .edit-joke-dialog-inner {
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 22px;
+      border: 1px solid rgba(255,255,255,.76);
+      border-radius: 28px;
+      color: var(--text);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(250,249,255,.99),
+          rgba(228,223,245,.98)
+        );
+      box-shadow:
+        0 30px 80px rgba(43,31,75,.34),
+        inset 0 1px 0 rgba(255,255,255,.95);
+    }
+
+    .edit-profile-header {
+      margin-bottom: 18px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .edit-profile-header strong,
+    .edit-profile-header span {
+      display: block;
+    }
+
+    .edit-profile-header strong {
+      font-size: 20px;
+    }
+
+    .edit-profile-header span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .avatar-editor {
+      margin-bottom: 17px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,.52);
+    }
+
+    .avatar-editor-preview {
+      width: 84px;
+      height: 84px;
+      flex: 0 0 84px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: white;
+      background:
+        linear-gradient(135deg, var(--primary), var(--like));
+      box-shadow: 0 12px 28px rgba(112,80,255,.24);
+      font-size: 25px;
+      font-weight: 950;
+    }
+
+    .avatar-editor-controls {
+      min-width: 0;
+      flex: 1;
+      display: grid;
+      gap: 7px;
+    }
+
+    .avatar-upload-button,
+    .remove-avatar-button {
+      min-height: 37px;
+      padding: 0 11px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      background: var(--surface);
+      font: inherit;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .avatar-upload-button input {
+      display: none;
+    }
+
+    .remove-avatar-button {
+      color: var(--like);
+      background: rgba(239,71,111,.06);
+    }
+
+    .avatar-editor-controls small {
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.35;
+    }
+
+    .profile-edit-field {
+      margin-top: 12px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .profile-edit-field > span {
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .profile-edit-field input,
+    .profile-edit-field textarea,
+    .profile-edit-username {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      color: var(--text);
+      background: rgba(255,255,255,.75);
+      font: inherit;
+      font-size: 12px;
+    }
+
+    .profile-edit-field input {
+      min-height: 47px;
+      padding: 0 13px;
+    }
+
+    .profile-edit-field textarea {
+      min-height: 100px;
+      padding: 12px 13px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .profile-edit-username {
+      min-height: 47px;
+      padding: 0 13px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .profile-edit-username input {
+      min-height: 43px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none !important;
+    }
+
+    .profile-edit-field > small {
+      color: var(--muted);
+      font-size: 9px;
+      text-align: right;
+    }
+
+    .edit-profile-status {
+      margin-top: 13px;
+      padding: 10px 12px;
+      border: 1px solid rgba(112,80,255,.16);
+      border-radius: 13px;
+      background: rgba(112,80,255,.08);
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .edit-profile-status[data-type="error"] {
+      color: #a32247;
+      border-color: rgba(239,71,111,.24);
+      background: rgba(239,71,111,.09);
+    }
+
+    .save-profile-button {
+      width: 100%;
+      min-height: 47px;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 15px;
+      color: white;
+      background:
+        linear-gradient(135deg, var(--primary), #9873ff);
+      box-shadow: 0 11px 23px rgba(112,80,255,.24);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+
+    /* Управление своими анекдотами */
+    .own-joke-actions {
+      margin: 0 0 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .own-joke-actions[hidden] {
+      display: none;
+    }
+
+    .edit-joke-button,
+    .delete-joke-button {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .edit-joke-button {
+      color: var(--primary);
+      background: rgba(112,80,255,.08);
+    }
+
+    .delete-joke-button {
+      color: var(--like);
+      background: rgba(239,71,111,.08);
+    }
+
+    .edit-joke-input {
+      width: 100%;
+      min-height: 210px;
+      padding: 15px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      color: var(--text);
+      background: var(--surface-2);
+      font: inherit;
+      font-size: 15px;
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    .edit-joke-footer {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .edit-joke-footer > span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .edit-joke-footer .save-profile-button {
+      width: auto;
+      min-width: 145px;
+      margin: 0 0 0 auto;
+    }
+
+    html[data-theme="dark"] .edit-profile-dialog-inner,
+    html[data-theme="dark"] .edit-joke-dialog-inner,
+    html[data-theme="dark"] .avatar-editor {
+      color: var(--text);
+      border-color: var(--border);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(31,27,42,.98),
+          rgba(22,19,31,.98)
+        );
+      box-shadow:
+        0 30px 75px rgba(0,0,0,.44),
+        inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    html[data-theme="dark"] .profile-edit-field input,
+    html[data-theme="dark"] .profile-edit-field textarea,
+    html[data-theme="dark"] .profile-edit-username,
+    html[data-theme="dark"] .edit-joke-input {
+      color: var(--text);
+      border-color: var(--border);
+      background: #15121e;
+    }
+
+    html[data-theme="dark"] .avatar-upload-button {
+      color: var(--text);
+      background: #2a2536;
+    }
+
+    html[data-theme="dark"] .edit-profile-status[data-type="error"] {
+      color: #ff9bb5;
+    }
+
+    @media (max-width: 430px) {
+      .avatar-editor {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .avatar-editor-preview {
+        align-self: center;
+      }
+    }
+
   </style>
 </head>
 <body class="auth-locked">
@@ -5266,6 +5631,28 @@
       </div>
       <p id="profileJokeFullText" class="profile-joke-full-text"></p>
 
+      <div
+        id="ownJokeActions"
+        class="own-joke-actions"
+        hidden
+      >
+        <button
+          id="editJokeButton"
+          class="edit-joke-button"
+          type="button"
+        >
+          Редактировать
+        </button>
+
+        <button
+          id="deleteJokeButton"
+          class="delete-joke-button"
+          type="button"
+        >
+          Удалить
+        </button>
+      </div>
+
       <div class="profile-joke-modal-reactions" aria-label="Оценки анекдота">
         <span class="reaction-chip like-count" title="Понравилось">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -5427,6 +5814,14 @@
           </div>
         </div>
 
+        <button
+          id="editProfileButton"
+          class="edit-profile-button"
+          type="button"
+        >
+          Редактировать профиль
+        </button>
+
         <button id="signOutButton" class="sign-out-button" type="button">
           Выйти из аккаунта
         </button>
@@ -5436,6 +5831,146 @@
         Тема сохраняется на устройстве, а аккаунт — в Supabase.
       </p>
     </div>
+  </dialog>
+
+  <dialog id="editProfileDialog" class="edit-profile-dialog">
+    <form id="editProfileForm" class="edit-profile-dialog-inner" novalidate>
+      <div class="edit-profile-header">
+        <div>
+          <strong>Редактировать профиль</strong>
+          <span>Изменения увидят другие пользователи</span>
+        </div>
+
+        <button
+          id="editProfileClose"
+          class="settings-close"
+          type="button"
+          aria-label="Закрыть"
+        >×</button>
+      </div>
+
+      <div class="avatar-editor">
+        <div
+          id="editProfileAvatarPreview"
+          class="avatar-editor-preview"
+        >Я</div>
+
+        <div class="avatar-editor-controls">
+          <label class="avatar-upload-button">
+            <input
+              id="editProfileAvatarInput"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+            >
+            Выбрать фотографию
+          </label>
+
+          <button
+            id="removeProfileAvatarButton"
+            class="remove-avatar-button"
+            type="button"
+          >
+            Удалить фотографию
+          </button>
+
+          <small>PNG, JPG, WEBP или GIF, не более 5 МБ.</small>
+        </div>
+      </div>
+
+      <label class="profile-edit-field">
+        <span>Имя</span>
+        <input
+          id="editProfileName"
+          type="text"
+          minlength="2"
+          maxlength="40"
+          required
+        >
+      </label>
+
+      <label class="profile-edit-field">
+        <span>Уникальный тег</span>
+        <div class="profile-edit-username">
+          <b>@</b>
+          <input
+            id="editProfileUsername"
+            type="text"
+            minlength="3"
+            maxlength="24"
+            pattern="[a-z0-9_]{3,24}"
+            required
+          >
+        </div>
+        <small>Латинские буквы, цифры и знак подчёркивания.</small>
+      </label>
+
+      <label class="profile-edit-field">
+        <span>Описание</span>
+        <textarea
+          id="editProfileBio"
+          rows="4"
+          maxlength="300"
+          placeholder="Расскажи немного о себе"
+        ></textarea>
+        <small>
+          <span id="editProfileBioCount">0</span>/300
+        </small>
+      </label>
+
+      <div
+        id="editProfileStatus"
+        class="edit-profile-status"
+        role="status"
+        hidden
+      ></div>
+
+      <button
+        id="saveProfileButton"
+        class="save-profile-button"
+        type="submit"
+      >
+        Сохранить изменения
+      </button>
+    </form>
+  </dialog>
+
+  <dialog id="editJokeDialog" class="edit-joke-dialog">
+    <form id="editJokeForm" class="edit-joke-dialog-inner">
+      <div class="edit-profile-header">
+        <div>
+          <strong>Редактировать анекдот</strong>
+          <span>Текст обновится в общей ленте</span>
+        </div>
+
+        <button
+          id="editJokeClose"
+          class="settings-close"
+          type="button"
+          aria-label="Закрыть"
+        >×</button>
+      </div>
+
+      <textarea
+        id="editJokeInput"
+        class="edit-joke-input"
+        minlength="5"
+        maxlength="500"
+        rows="8"
+        required
+      ></textarea>
+
+      <div class="edit-joke-footer">
+        <span><b id="editJokeCount">0</b>/500</span>
+
+        <button
+          id="saveJokeButton"
+          class="save-profile-button"
+          type="submit"
+        >
+          Сохранить
+        </button>
+      </div>
+    </form>
   </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -5728,6 +6263,7 @@
           name: profile.display_name || "Пользователь",
           handle: `@${profile.username}`,
           initial: getInitial(profile.display_name),
+          avatarUrl: profile.avatar_url || null,
           bio: profile.bio || "",
           followers: 0,
           following: 0,
@@ -5902,6 +6438,7 @@
             author?.display_name || "Пользователь",
           handle:
             `@${author?.username || "user"}`,
+          avatarUrl: author?.avatar_url || null,
           text: row.content,
           createdAt:
             new Date(row.created_at).getTime(),
@@ -6460,6 +6997,19 @@
     const settingsAccountName = document.getElementById("settingsAccountName");
     const settingsAccountUsername = document.getElementById("settingsAccountUsername");
     const settingsAccountEmail = document.getElementById("settingsAccountEmail");
+    const editProfileButton = document.getElementById("editProfileButton");
+    const editProfileDialog = document.getElementById("editProfileDialog");
+    const editProfileForm = document.getElementById("editProfileForm");
+    const editProfileClose = document.getElementById("editProfileClose");
+    const editProfileAvatarPreview = document.getElementById("editProfileAvatarPreview");
+    const editProfileAvatarInput = document.getElementById("editProfileAvatarInput");
+    const removeProfileAvatarButton = document.getElementById("removeProfileAvatarButton");
+    const editProfileName = document.getElementById("editProfileName");
+    const editProfileUsername = document.getElementById("editProfileUsername");
+    const editProfileBio = document.getElementById("editProfileBio");
+    const editProfileBioCount = document.getElementById("editProfileBioCount");
+    const editProfileStatus = document.getElementById("editProfileStatus");
+    const saveProfileButton = document.getElementById("saveProfileButton");
 
     const cardArea = document.getElementById("cardArea");
     const sharedFeedStatus = document.getElementById("sharedFeedStatus");
@@ -6506,6 +7056,15 @@ const myJokes = document.getElementById("myJokes");
     const profileJokeFullText = document.getElementById("profileJokeFullText");
     const profileJokeLikeCount = document.getElementById("profileJokeLikeCount");
     const profileJokeDislikeCount = document.getElementById("profileJokeDislikeCount");
+    const ownJokeActions = document.getElementById("ownJokeActions");
+    const editJokeButton = document.getElementById("editJokeButton");
+    const deleteJokeButton = document.getElementById("deleteJokeButton");
+    const editJokeDialog = document.getElementById("editJokeDialog");
+    const editJokeForm = document.getElementById("editJokeForm");
+    const editJokeClose = document.getElementById("editJokeClose");
+    const editJokeInput = document.getElementById("editJokeInput");
+    const editJokeCount = document.getElementById("editJokeCount");
+    const saveJokeButton = document.getElementById("saveJokeButton");
     const commentsCountLabel = document.getElementById("commentsCountLabel");
     const commentForm = document.getElementById("commentForm");
     const commentInput = document.getElementById("commentInput");
@@ -6547,7 +7106,42 @@ const myJokes = document.getElementById("myJokes");
     let activePublicProfile = null;
     let publicProfileReturnPage = "home";
     let activeJokeInDialog = "";
+    let activeJokeRecord = null;
     let replyingToCommentId = null;
+    let pendingAvatarFile = null;
+    let removeAvatarRequested = false;
+    let avatarPreviewObjectUrl = null;
+
+
+    function safeAvatarUrl(value) {
+      const url = String(value || "").trim();
+      return /^https:\/\//i.test(url) ? url : "";
+    }
+
+    function avatarStyleAttribute(url) {
+      const safeUrl = safeAvatarUrl(url);
+      if (!safeUrl) return "";
+
+      const escaped = safeUrl
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "%22")
+        .replace(/'/g, "%27");
+
+      return `style="background-image:url('${escaped}')"`;
+    }
+
+    function setAvatarElement(element, avatarUrl, name) {
+      if (!element) return;
+
+      const safeUrl = safeAvatarUrl(avatarUrl);
+      const initial = getInitial(name);
+
+      element.classList.toggle("has-avatar", Boolean(safeUrl));
+      element.style.backgroundImage = safeUrl
+        ? `url("${safeUrl.replace(/"/g, "%22")}")`
+        : "";
+      element.textContent = safeUrl ? "" : initial;
+    }
 
     function normalizeUsername(value) {
       return String(value || "")
@@ -6703,14 +7297,14 @@ const myJokes = document.getElementById("myJokes");
         profile?.bio ||
         "Здесь хранятся мои анекдоты и всё, что мне понравилось.";
 
-      const initial = getInitial(name);
+      const avatarUrl = profile?.avatar_url || null;
 
       ownProfileName.textContent = name;
       ownProfileUsername.textContent = `@${username}`;
       ownProfileBio.textContent = bio;
-      profileAvatar.textContent = initial;
+      setAvatarElement(profileAvatar, avatarUrl, name);
 
-      settingsAccountAvatar.textContent = initial;
+      setAvatarElement(settingsAccountAvatar, avatarUrl, name);
       settingsAccountName.textContent = name;
       settingsAccountUsername.textContent = `@${username}`;
       settingsAccountEmail.textContent = user.email || "Почта не указана";
@@ -7024,6 +7618,298 @@ const myJokes = document.getElementById("myJokes");
 
     const THEME_STORAGE_KEY = "smesnoThemeV1";
 
+
+    function setEditProfileStatus(message, type = "info") {
+      editProfileStatus.textContent = message;
+      editProfileStatus.dataset.type = type;
+      editProfileStatus.hidden = false;
+    }
+
+    function clearEditProfileStatus() {
+      editProfileStatus.hidden = true;
+      editProfileStatus.textContent = "";
+      editProfileStatus.dataset.type = "";
+    }
+
+    function resetAvatarPreviewObjectUrl() {
+      if (avatarPreviewObjectUrl) {
+        URL.revokeObjectURL(avatarPreviewObjectUrl);
+        avatarPreviewObjectUrl = null;
+      }
+    }
+
+    function openEditProfileDialog() {
+      if (!currentDatabaseProfile) return;
+
+      pendingAvatarFile = null;
+      removeAvatarRequested = false;
+      editProfileAvatarInput.value = "";
+      clearEditProfileStatus();
+
+      editProfileName.value =
+        currentDatabaseProfile.display_name || "";
+
+      editProfileUsername.value =
+        currentDatabaseProfile.username || "";
+
+      editProfileBio.value =
+        currentDatabaseProfile.bio || "";
+
+      editProfileBioCount.textContent =
+        editProfileBio.value.length;
+
+      setAvatarElement(
+        editProfileAvatarPreview,
+        currentDatabaseProfile.avatar_url,
+        currentDatabaseProfile.display_name
+      );
+
+      closeSettings();
+      editProfileDialog.showModal();
+    }
+
+    function closeEditProfileDialog() {
+      resetAvatarPreviewObjectUrl();
+      editProfileDialog.close();
+    }
+
+    async function checkUpdatedUsernameAvailable(username) {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .neq("id", currentAuthUser.id)
+        .limit(1);
+
+      if (error) throw error;
+      return data.length === 0;
+    }
+
+    async function uploadProfileAvatar(file) {
+      const path = `${currentAuthUser.id}/avatar`;
+
+      const { error: uploadError } =
+        await supabaseClient.storage
+          .from("avatars")
+          .upload(path, file, {
+            upsert: true,
+            contentType: file.type,
+            cacheControl: "3600"
+          });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabaseClient.storage
+        .from("avatars")
+        .getPublicUrl(path);
+
+      return `${data.publicUrl}?v=${Date.now()}`;
+    }
+
+    editProfileButton.addEventListener(
+      "click",
+      openEditProfileDialog
+    );
+
+    editProfileClose.addEventListener(
+      "click",
+      closeEditProfileDialog
+    );
+
+    editProfileDialog.addEventListener("click", event => {
+      if (event.target === editProfileDialog) {
+        closeEditProfileDialog();
+      }
+    });
+
+    editProfileUsername.addEventListener("input", () => {
+      editProfileUsername.value = normalizeUsername(
+        editProfileUsername.value
+      )
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 24);
+    });
+
+    editProfileBio.addEventListener("input", () => {
+      editProfileBioCount.textContent =
+        editProfileBio.value.length;
+    });
+
+    editProfileAvatarInput.addEventListener("change", () => {
+      clearEditProfileStatus();
+
+      const file = editProfileAvatarInput.files?.[0];
+
+      if (!file) {
+        pendingAvatarFile = null;
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        editProfileAvatarInput.value = "";
+        setEditProfileStatus(
+          "Выбери файл изображения.",
+          "error"
+        );
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        editProfileAvatarInput.value = "";
+        setEditProfileStatus(
+          "Размер изображения не должен превышать 5 МБ.",
+          "error"
+        );
+        return;
+      }
+
+      resetAvatarPreviewObjectUrl();
+      avatarPreviewObjectUrl = URL.createObjectURL(file);
+      pendingAvatarFile = file;
+      removeAvatarRequested = false;
+
+      setAvatarElement(
+        editProfileAvatarPreview,
+        avatarPreviewObjectUrl,
+        editProfileName.value
+      );
+    });
+
+    removeProfileAvatarButton.addEventListener("click", () => {
+      pendingAvatarFile = null;
+      removeAvatarRequested = true;
+      editProfileAvatarInput.value = "";
+      resetAvatarPreviewObjectUrl();
+
+      setAvatarElement(
+        editProfileAvatarPreview,
+        null,
+        editProfileName.value
+      );
+    });
+
+    editProfileForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      clearEditProfileStatus();
+
+      if (!editProfileForm.reportValidity()) return;
+
+      const displayName = editProfileName.value.trim();
+      const username = normalizeUsername(
+        editProfileUsername.value
+      );
+      const bio = editProfileBio.value.trim();
+
+      if (!/^[a-z0-9_]{3,24}$/.test(username)) {
+        setEditProfileStatus(
+          "Тег должен содержать 3–24 латинских символа, цифры или знак подчёркивания.",
+          "error"
+        );
+        return;
+      }
+
+      saveProfileButton.disabled = true;
+      saveProfileButton.textContent = "Сохраняем…";
+
+      try {
+        const usernameAvailable =
+          await checkUpdatedUsernameAvailable(username);
+
+        if (!usernameAvailable) {
+          setEditProfileStatus(
+            "Этот @тег уже занят.",
+            "error"
+          );
+          return;
+        }
+
+        let avatarUrl =
+          currentDatabaseProfile.avatar_url || null;
+
+        if (removeAvatarRequested) {
+          avatarUrl = null;
+
+          await supabaseClient.storage
+            .from("avatars")
+            .remove([
+              `${currentAuthUser.id}/avatar`
+            ]);
+        } else if (pendingAvatarFile) {
+          avatarUrl = await uploadProfileAvatar(
+            pendingAvatarFile
+          );
+        }
+
+        const { data: updatedProfile, error } =
+          await supabaseClient
+            .from("profiles")
+            .update({
+              display_name: displayName,
+              username,
+              bio,
+              avatar_url: avatarUrl
+            })
+            .eq("id", currentAuthUser.id)
+            .select(`
+              id,
+              username,
+              display_name,
+              bio,
+              avatar_url,
+              created_at
+            `)
+            .single();
+
+        if (error) throw error;
+
+        const { error: metadataError } =
+          await supabaseClient.auth.updateUser({
+            data: {
+              display_name: displayName,
+              username
+            }
+          });
+
+        if (metadataError) throw metadataError;
+
+        currentDatabaseProfile = updatedProfile;
+        databaseProfiles.set(
+          updatedProfile.id,
+          updatedProfile
+        );
+
+        applyAuthenticatedProfile(
+          currentAuthUser,
+          updatedProfile
+        );
+
+        await loadDatabaseProfiles();
+        await loadSharedJokes({
+          silent: true
+        });
+
+        renderProfile();
+        renderSearchResults(searchInput.value);
+        renderMessenger();
+
+        closeEditProfileDialog();
+      } catch (error) {
+        console.error("Profile update error:", error);
+
+        const message =
+          String(error?.message || "").includes("duplicate") ||
+          String(error?.message || "").includes("unique")
+            ? "Этот @тег уже занят."
+            : "Не удалось сохранить профиль. Проверь SQL для аватаров и подключение.";
+
+        setEditProfileStatus(message, "error");
+      } finally {
+        saveProfileButton.disabled = false;
+        saveProfileButton.textContent =
+          "Сохранить изменения";
+      }
+    });
+
     function getSavedTheme() {
       try {
         return localStorage.getItem(THEME_STORAGE_KEY) === "dark"
@@ -7181,6 +8067,13 @@ function switchPage(pageName) {
         : `@${ownUsername}`;
 
       const authorInitial = getInitial(authorName);
+      const authorAvatarUrl = sharedRecord
+        ? (
+            isOwnShared
+              ? currentDatabaseProfile?.avatar_url
+              : sharedRecord.author.avatar_url
+          )
+        : currentDatabaseProfile?.avatar_url;
 
       card.innerHTML = `
         <span class="stamp like">НРАВИТСЯ</span>
@@ -7280,6 +8173,12 @@ function switchPage(pageName) {
       `;
 
       const authorButton = card.querySelector(".author-profile-trigger");
+      setAvatarElement(
+        authorButton,
+        authorAvatarUrl,
+        authorName
+      );
+
       const commentButton = card.querySelector(".feed-comment-button");
       const shareButton = card.querySelector(".feed-share-button");
 
@@ -7546,7 +8445,13 @@ return;
             const following = isFollowingProfile(profile.id);
             return `
               <article class="user-search-card">
-                <button class="user-search-avatar" type="button" data-search-profile-open="${profile.id}" aria-label="Открыть профиль ${escapeHtml(profile.name)}">${escapeHtml(profile.initial)}</button>
+                <button
+                  class="user-search-avatar ${profile.avatarUrl ? "has-avatar" : ""}"
+                  type="button"
+                  data-search-profile-open="${profile.id}"
+                  aria-label="Открыть профиль ${escapeHtml(profile.name)}"
+                  ${avatarStyleAttribute(profile.avatarUrl)}
+                >${profile.avatarUrl ? "" : escapeHtml(profile.initial)}</button>
                 <button class="user-search-info" type="button" data-search-profile-open="${profile.id}">
                   <strong>${escapeHtml(profile.name)}</strong><span>${escapeHtml(profile.handle)}</span>
                 </button>
@@ -7759,7 +8664,10 @@ if (!ownJokes.length) {
         return `
           <article class="comment-item" data-comment-id="${comment.id}">
             <div class="comment-main">
-              <span class="comment-avatar">${escapeHtml(getInitial(comment.authorName))}</span>
+              <span
+                class="comment-avatar ${comment.avatarUrl ? "has-avatar" : ""}"
+                ${avatarStyleAttribute(comment.avatarUrl)}
+              >${comment.avatarUrl ? "" : escapeHtml(getInitial(comment.authorName))}</span>
               <div class="comment-content">
                 <div class="comment-author-row"><div><strong>${escapeHtml(comment.authorName)}</strong><span>${escapeHtml(comment.handle)}</span></div><time>${formatCommentTime(comment.createdAt)}</time></div>
                 <p>${escapeHtml(comment.text)}</p>
@@ -7771,7 +8679,10 @@ if (!ownJokes.length) {
             </div>
             ${replies.length ? `<div class="comment-replies">${replies.map(reply => `
               <article class="comment-reply" data-parent-comment-id="${comment.id}" data-reply-id="${reply.id}">
-                <span class="comment-avatar comment-avatar-small">${escapeHtml(getInitial(reply.authorName))}</span>
+                <span
+                  class="comment-avatar comment-avatar-small ${reply.avatarUrl ? "has-avatar" : ""}"
+                  ${avatarStyleAttribute(reply.avatarUrl)}
+                >${reply.avatarUrl ? "" : escapeHtml(getInitial(reply.authorName))}</span>
                 <div class="comment-content">
                   <div class="comment-author-row"><div><strong>${escapeHtml(reply.authorName)}</strong><span>${escapeHtml(reply.handle)}</span></div><time>${formatCommentTime(reply.createdAt)}</time></div>
                   <p><span class="reply-mention">${escapeHtml(reply.replyTo)}</span> ${escapeHtml(reply.text)}</p>
@@ -7803,7 +8714,17 @@ if (!ownJokes.length) {
     function openJokeInProfileDialog(joke) {
       if (typeof joke !== "string") return;
       activeJokeInDialog = joke;
+      activeJokeRecord = getSharedJokeRecord(joke);
       clearReplyMode();
+
+      const isOwnJoke =
+        Boolean(
+          activeJokeRecord &&
+          currentAuthUser &&
+          activeJokeRecord.author_id === currentAuthUser.id
+        );
+
+      ownJokeActions.hidden = !isOwnJoke;
       const stats = getJokeStats(joke);
       profileJokeFullText.textContent = joke;
       profileJokeLikeCount.textContent = stats.likes;
@@ -7998,6 +8919,147 @@ if (!ownJokes.length) {
       }
     });
 
+
+    function closeEditJokeDialog() {
+      editJokeDialog.close();
+    }
+
+    editJokeButton.addEventListener("click", () => {
+      if (
+        !activeJokeRecord ||
+        activeJokeRecord.author_id !== currentAuthUser?.id
+      ) {
+        return;
+      }
+
+      editJokeInput.value = activeJokeRecord.content;
+      editJokeCount.textContent =
+        activeJokeRecord.content.length;
+
+      profileJokeDialog.close();
+      editJokeDialog.showModal();
+      editJokeInput.focus();
+    });
+
+    editJokeClose.addEventListener(
+      "click",
+      closeEditJokeDialog
+    );
+
+    editJokeDialog.addEventListener("click", event => {
+      if (event.target === editJokeDialog) {
+        closeEditJokeDialog();
+      }
+    });
+
+    editJokeInput.addEventListener("input", () => {
+      editJokeCount.textContent =
+        editJokeInput.value.length;
+    });
+
+    editJokeForm.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      if (
+        !activeJokeRecord ||
+        activeJokeRecord.author_id !== currentAuthUser?.id
+      ) {
+        return;
+      }
+
+      const content = editJokeInput.value.trim();
+
+      if (content.length < 5) return;
+
+      saveJokeButton.disabled = true;
+      saveJokeButton.textContent = "Сохраняем…";
+
+      try {
+        const { error } = await supabaseClient
+          .from("jokes")
+          .update({ content })
+          .eq("id", activeJokeRecord.id)
+          .eq("author_id", currentAuthUser.id);
+
+        if (error) throw error;
+
+        closeEditJokeDialog();
+        activeJokeInDialog = "";
+        activeJokeRecord = null;
+
+        await loadSharedJokes({
+          silent: true
+        });
+        await loadSocialData();
+
+        currentIndex = 0;
+        renderCards();
+        renderProfile();
+        renderSearchResults(searchInput.value);
+      } catch (error) {
+        console.error("Joke update error:", error);
+
+        window.alert(
+          String(error?.message || "").includes("duplicate")
+            ? "Такой анекдот уже есть в твоём профиле."
+            : "Не удалось сохранить изменения."
+        );
+      } finally {
+        saveJokeButton.disabled = false;
+        saveJokeButton.textContent = "Сохранить";
+      }
+    });
+
+    deleteJokeButton.addEventListener("click", async () => {
+      if (
+        !activeJokeRecord ||
+        activeJokeRecord.author_id !== currentAuthUser?.id
+      ) {
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Удалить этот анекдот? Вместе с ним удалятся реакции и комментарии."
+      );
+
+      if (!confirmed) return;
+
+      deleteJokeButton.disabled = true;
+      deleteJokeButton.textContent = "Удаляем…";
+
+      try {
+        const { error } = await supabaseClient
+          .from("jokes")
+          .delete()
+          .eq("id", activeJokeRecord.id)
+          .eq("author_id", currentAuthUser.id);
+
+        if (error) throw error;
+
+        profileJokeDialog.close();
+        activeJokeInDialog = "";
+        activeJokeRecord = null;
+
+        await loadSharedJokes({
+          silent: true
+        });
+        await loadSocialData();
+
+        currentIndex = 0;
+        renderCards();
+        renderProfile();
+        renderSearchResults(searchInput.value);
+      } catch (error) {
+        console.error("Joke delete error:", error);
+        window.alert(
+          "Не удалось удалить анекдот."
+        );
+      } finally {
+        deleteJokeButton.disabled = false;
+        deleteJokeButton.textContent = "Удалить";
+      }
+    });
+
     profileJokeClose.addEventListener("click", () => {
       profileJokeDialog.close();
     });
@@ -8024,6 +9086,7 @@ if (!ownJokes.length) {
         name: profile.name,
         handle: profile.handle,
         initial: profile.initial,
+        avatarUrl: profile.avatarUrl || null,
         bio: profile.bio,
         followers: profile.followers,
         following: profile.following,
@@ -8058,6 +9121,7 @@ if (!ownJokes.length) {
         name: profile.display_name || "Пользователь",
         handle: `@${profile.username || "user"}`,
         initial: getInitial(profile.display_name),
+        avatarUrl: profile.avatar_url || null,
         bio:
           profile.bio ||
           "Публикует анекдоты в общей ленте.",
@@ -8078,7 +9142,11 @@ if (!ownJokes.length) {
     function renderPublicProfile(profile) {
       activePublicProfile = profile;
 
-      publicProfileAvatar.textContent = profile.initial;
+      setAvatarElement(
+        publicProfileAvatar,
+        profile.avatarUrl,
+        profile.name
+      );
       publicProfileName.textContent = profile.name;
       publicProfileHandle.textContent = profile.handle;
       publicProfileHandleTop.textContent = profile.handle;
@@ -8331,7 +9399,10 @@ if (!ownJokes.length) {
           type="button"
           data-feed-contact-id="${contact.id}"
         >
-          <span class="feed-share-avatar">${contact.initial}</span>
+          <span
+            class="feed-share-avatar ${contact.avatarUrl ? "has-avatar" : ""}"
+            ${avatarStyleAttribute(contact.avatarUrl)}
+          >${contact.avatarUrl ? "" : contact.initial}</span>
           <span class="feed-share-contact-info">
             <strong>${escapeHtml(contact.name)}</strong>
             <small>${escapeHtml(contact.handle)}</small>
@@ -8464,7 +9535,10 @@ if (!ownJokes.length) {
           type="button"
           data-contact-id="${contact.id}"
         >
-          <span class="contact-mini-avatar">${contact.initial}</span>
+          <span
+            class="contact-mini-avatar ${contact.avatarUrl ? "has-avatar" : ""}"
+            ${avatarStyleAttribute(contact.avatarUrl)}
+          >${contact.avatarUrl ? "" : contact.initial}</span>
           <span>${escapeHtml(contact.name)}</span>
           ${
             unreadByContact.get(contact.id)
@@ -8499,7 +9573,11 @@ if (!ownJokes.length) {
       messageText.disabled = false;
       const conversation = ensureConversation(contact.id);
 
-      chatAvatar.textContent = contact.initial;
+      setAvatarElement(
+        chatAvatar,
+        contact.avatarUrl,
+        contact.name
+      );
       chatName.textContent = contact.name;
       chatHandle.textContent = contact.handle;
 
