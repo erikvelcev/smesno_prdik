@@ -4800,6 +4800,488 @@
       }
     }
 
+  
+    /* ============================================
+       АНЕКДОТ ДНЯ
+       ============================================ */
+    .daily-contest-card {
+      margin-bottom: 14px;
+      padding: 16px;
+      border: 1px solid rgba(255,153,39,.22);
+      border-radius: 24px;
+      color: var(--text);
+      background:
+        radial-gradient(
+          circle at 8% 5%,
+          rgba(255,198,73,.27),
+          transparent 36%
+        ),
+        linear-gradient(
+          145deg,
+          rgba(255,250,235,.98),
+          rgba(246,229,255,.94)
+        );
+      box-shadow:
+        0 18px 44px rgba(102,64,35,.12),
+        inset 0 1px 0 rgba(255,255,255,.96);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .daily-contest-card::after {
+      content: "";
+      position: absolute;
+      top: -55px;
+      right: -45px;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: rgba(255,119,70,.08);
+      pointer-events: none;
+    }
+
+    .daily-contest-header {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .daily-contest-flame {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      border-radius: 17px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,255,255,.92),
+          rgba(255,221,166,.88)
+        );
+      box-shadow:
+        0 10px 24px rgba(235,116,44,.19),
+        inset 0 1px 0 rgba(255,255,255,.98);
+      font-size: 25px;
+      animation: dailyFlameFloat 2.7s ease-in-out infinite;
+    }
+
+    @keyframes dailyFlameFloat {
+      0%, 100% {
+        transform: translateY(0) rotate(-2deg);
+      }
+      50% {
+        transform: translateY(-3px) rotate(3deg);
+      }
+    }
+
+    .daily-contest-title-wrap {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .daily-contest-title-wrap strong,
+    .daily-contest-title-wrap span {
+      display: block;
+    }
+
+    .daily-contest-title-wrap strong {
+      font-size: 18px;
+      letter-spacing: -.02em;
+    }
+
+    .daily-contest-title-wrap span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.35;
+    }
+
+    .daily-contest-countdown {
+      flex: 0 0 auto;
+      padding: 7px 9px;
+      border: 1px solid rgba(255,131,59,.18);
+      border-radius: 999px;
+      color: #b94f21;
+      background: rgba(255,255,255,.67);
+      font-size: 9px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .daily-contest-body {
+      position: relative;
+      z-index: 1;
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .daily-contest-section {
+      min-width: 0;
+    }
+
+    .daily-contest-section-title {
+      display: block;
+      margin: 0 3px 6px;
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .daily-contest-result {
+      min-height: 112px;
+      padding: 11px;
+      border: 1px solid rgba(112,80,255,.10);
+      border-radius: 18px;
+      display: grid;
+      grid-template-columns: 38px minmax(0,1fr);
+      gap: 9px;
+      align-items: start;
+      background: rgba(255,255,255,.67);
+      box-shadow:
+        0 8px 20px rgba(72,46,100,.08),
+        inset 0 1px 0 rgba(255,255,255,.94);
+      position: relative;
+    }
+
+    .daily-contest-result.winner {
+      border-color: rgba(255,145,44,.24);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,253,244,.94),
+          rgba(255,234,197,.78)
+        );
+    }
+
+    .daily-contest-result.leader {
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,255,255,.91),
+          rgba(235,228,255,.78)
+        );
+    }
+
+    .daily-contest-avatar {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 2px solid rgba(255,255,255,.88);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: white;
+      background:
+        linear-gradient(
+          135deg,
+          var(--primary),
+          var(--like)
+        );
+      background-position: center;
+      background-size: cover;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 7px 15px rgba(87,54,126,.15);
+    }
+
+    .daily-contest-main {
+      min-width: 0;
+      padding: 0 35px 0 0;
+      border: 0;
+      color: var(--text);
+      background: transparent;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .daily-contest-result-label {
+      display: block;
+      margin-bottom: 4px;
+      color: #bd5a24;
+      font-size: 8px;
+      font-weight: 950;
+    }
+
+    .daily-contest-result.leader .daily-contest-result-label {
+      color: var(--primary);
+    }
+
+    .daily-contest-main strong {
+      display: block;
+      overflow: hidden;
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .daily-contest-main strong small {
+      margin-left: 3px;
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 750;
+    }
+
+    .daily-contest-main p {
+      display: -webkit-box;
+      margin: 6px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+    }
+
+    .daily-contest-score {
+      position: absolute;
+      top: 9px;
+      right: 9px;
+      padding: 4px 6px;
+      border-radius: 999px;
+      color: var(--like);
+      background: rgba(239,71,111,.09);
+      font-size: 8px;
+      font-weight: 950;
+    }
+
+    .daily-contest-placeholder,
+    .daily-contest-empty-today {
+      min-height: 112px;
+      padding: 13px;
+      border: 1px dashed rgba(112,80,255,.18);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      background: rgba(255,255,255,.48);
+      text-align: left;
+    }
+
+    .daily-contest-empty-today {
+      width: 100%;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .daily-contest-placeholder > span,
+    .daily-contest-empty-today > span {
+      font-size: 24px;
+    }
+
+    .daily-contest-placeholder strong,
+    .daily-contest-empty-today strong {
+      display: block;
+      font-size: 11px;
+    }
+
+    .daily-contest-placeholder p,
+    .daily-contest-empty-today p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.35;
+    }
+
+    .daily-contest-loading {
+      grid-column: 1 / -1;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    /* Огонёк в профиле */
+    .profile-fire-badge {
+      width: fit-content;
+      margin: 2px 0 9px;
+      padding: 6px 9px;
+      border: 1px solid rgba(255,135,47,.20);
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #b94d1f;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,250,230,.92),
+          rgba(255,228,190,.72)
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.88);
+      font-size: 9px;
+      font-weight: 850;
+    }
+
+    .profile-fire-badge strong {
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .profile-fire-icon {
+      font-size: 14px;
+      animation: profileFirePulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes profileFirePulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.13) rotate(4deg);
+      }
+    }
+
+    .author-name-row {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .author-name-row > strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .author-fire-count {
+      flex: 0 0 auto;
+      padding: 2px 5px;
+      border-radius: 999px;
+      color: #b64e20;
+      background: rgba(255,151,54,.13);
+      font-size: 8px;
+      font-weight: 950;
+    }
+
+    .daily-winner-ribbon {
+      position: absolute;
+      top: 64px;
+      right: 18px;
+      z-index: 4;
+      padding: 6px 9px;
+      border: 1px solid rgba(255,160,42,.24);
+      border-radius: 999px;
+      color: #a94619;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,253,239,.96),
+          rgba(255,218,164,.90)
+        );
+      box-shadow:
+        0 8px 18px rgba(186,91,31,.14),
+        inset 0 1px 0 rgba(255,255,255,.92);
+      font-size: 8px;
+      font-weight: 950;
+      pointer-events: none;
+    }
+
+    .card.back-1 .daily-winner-ribbon,
+    .card.back-2 .daily-winner-ribbon {
+      opacity: 0;
+    }
+
+    html[data-theme="dark"] .daily-contest-card {
+      border-color: rgba(255,149,72,.18);
+      background:
+        radial-gradient(
+          circle at 8% 5%,
+          rgba(255,152,65,.14),
+          transparent 37%
+        ),
+        linear-gradient(
+          145deg,
+          rgba(34,28,42,.98),
+          rgba(25,21,34,.98)
+        );
+      box-shadow:
+        0 20px 48px rgba(0,0,0,.34),
+        inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    html[data-theme="dark"] .daily-contest-flame,
+    html[data-theme="dark"] .daily-contest-result,
+    html[data-theme="dark"] .daily-contest-placeholder,
+    html[data-theme="dark"] .daily-contest-empty-today {
+      border-color: rgba(255,255,255,.08);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(46,39,57,.96),
+          rgba(31,27,41,.96)
+        );
+      box-shadow:
+        0 10px 24px rgba(0,0,0,.25),
+        inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    html[data-theme="dark"] .daily-contest-countdown {
+      color: #ffb37d;
+      border-color: rgba(255,154,83,.18);
+      background: rgba(255,144,71,.09);
+    }
+
+    html[data-theme="dark"] .profile-fire-badge,
+    html[data-theme="dark"] .daily-winner-ribbon {
+      color: #ffb37d;
+      border-color: rgba(255,153,70,.18);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(73,46,35,.94),
+          rgba(51,34,33,.94)
+        );
+    }
+
+    html[data-theme="dark"] .author-fire-count {
+      color: #ffb37d;
+      background: rgba(255,145,69,.13);
+    }
+
+    @media (max-width: 560px) {
+      .daily-contest-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .daily-contest-countdown {
+        margin-left: 59px;
+      }
+
+      .daily-contest-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .daily-contest-card {
+        padding: 13px;
+      }
+
+      .daily-contest-countdown {
+        margin-left: 0;
+      }
+
+      .daily-winner-ribbon {
+        top: 69px;
+        right: 14px;
+      }
+    }
+
   </style>
 </head>
 <body class="auth-locked">
@@ -5025,6 +5507,26 @@
 
     <main>
       <section id="homePage" class="page active">
+
+        <section class="daily-contest-card" aria-labelledby="dailyContestTitle">
+          <div class="daily-contest-header">
+            <div class="daily-contest-flame" aria-hidden="true">🔥</div>
+
+            <div class="daily-contest-title-wrap">
+              <strong id="dailyContestTitle">Анекдот дня</strong>
+              <span>Победитель определяется каждый день после 00:00</span>
+            </div>
+
+            <span id="dailyContestCountdown" class="daily-contest-countdown">
+              До итогов --:--:--
+            </span>
+          </div>
+
+          <div id="dailyContestBody" class="daily-contest-body">
+            <div class="daily-contest-loading">Загрузка конкурса…</div>
+          </div>
+        </section>
+
         <div class="swipe-banner">
           <span>Общая лента • свайп влево — нравится, вправо — не нравится</span>
           <span id="sharedFeedStatus" class="shared-feed-status">Подключение…</span>
@@ -5198,6 +5700,17 @@
             <div class="public-profile-main-info">
               <h2 id="publicProfileName" class="profile-name">Автор</h2>
               <p id="publicProfileHandle" class="public-profile-handle">@user</p>
+
+              <div
+                id="publicDailyWinsBadge"
+                class="profile-fire-badge"
+                title="Победы в конкурсе «Анекдот дня»"
+              >
+                <span class="profile-fire-icon" aria-hidden="true">🔥</span>
+                <strong id="publicDailyWinsCount">0</strong>
+                <span>Анекдот дня</span>
+              </div>
+
               <p id="publicProfileBio" class="profile-bio"></p>
             </div>
           </div>
@@ -5289,6 +5802,17 @@
             <div class="own-profile-info">
               <h2 id="ownProfileName" class="profile-name">Мой профиль</h2>
               <p id="ownProfileUsername" class="own-profile-username">@username</p>
+
+              <div
+                id="ownDailyWinsBadge"
+                class="profile-fire-badge"
+                title="Победы в конкурсе «Анекдот дня»"
+              >
+                <span class="profile-fire-icon" aria-hidden="true">🔥</span>
+                <strong id="ownDailyWinsCount">0</strong>
+                <span>Анекдот дня</span>
+              </div>
+
               <p id="ownProfileBio" class="profile-bio">Здесь хранятся мои анекдоты и всё, что мне понравилось.</p>
             </div>
           </div>
@@ -6070,6 +6594,13 @@
     let unreadByContact = new Map();
     let socialRealtimeChannel = null;
 
+    let dailyWinnerRows = [];
+    let dailyWinCounts = new Map();
+    let dailyWinningJokeIds = new Set();
+    let dailyContestClockTimer = null;
+    let lastObservedContestDate = "";
+    const CONTEST_TIME_ZONE = "Europe/Chisinau";
+
     function getComments(joke) {
       return jokeComments[jokeKey(joke)] || [];
     }
@@ -6217,6 +6748,400 @@
           avatar_url: null
         }
       };
+    }
+
+
+    function getChisinauDateKey(date = new Date()) {
+      const parts = new Intl.DateTimeFormat(
+        "en-GB",
+        {
+          timeZone: CONTEST_TIME_ZONE,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }
+      ).formatToParts(date);
+
+      const values = Object.fromEntries(
+        parts
+          .filter(part => part.type !== "literal")
+          .map(part => [part.type, part.value])
+      );
+
+      return `${values.year}-${values.month}-${values.day}`;
+    }
+
+    function getChisinauClockParts(date = new Date()) {
+      const parts = new Intl.DateTimeFormat(
+        "en-GB",
+        {
+          timeZone: CONTEST_TIME_ZONE,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hourCycle: "h23"
+        }
+      ).formatToParts(date);
+
+      const values = Object.fromEntries(
+        parts
+          .filter(part => part.type !== "literal")
+          .map(part => [part.type, Number(part.value)])
+      );
+
+      return {
+        hour: values.hour || 0,
+        minute: values.minute || 0,
+        second: values.second || 0
+      };
+    }
+
+    function formatContestDate(dateKey) {
+      const [year, month, day] = String(dateKey)
+        .split("-")
+        .map(Number);
+
+      return new Date(
+        Date.UTC(year, month - 1, day, 12)
+      ).toLocaleDateString(
+        "ru-RU",
+        {
+          day: "numeric",
+          month: "long",
+          timeZone: "UTC"
+        }
+      );
+    }
+
+    function getDailyWinCount(userId) {
+      return dailyWinCounts.get(userId) || 0;
+    }
+
+    function isDailyWinnerJoke(jokeId) {
+      return dailyWinningJokeIds.has(jokeId);
+    }
+
+    function normalizeDailyWinnerRow(row) {
+      const joke = Array.isArray(row.joke)
+        ? row.joke[0]
+        : row.joke;
+
+      const winner = Array.isArray(row.winner)
+        ? row.winner[0]
+        : row.winner;
+
+      return {
+        contestDate: row.contest_date,
+        jokeId: row.joke_id,
+        winnerId: row.winner_id,
+        likesCount: Number(row.likes_count) || 0,
+        awardedAt: row.awarded_at,
+        joke: joke || null,
+        winner: winner || {
+          id: row.winner_id,
+          username: "user",
+          display_name: "Пользователь",
+          avatar_url: null
+        }
+      };
+    }
+
+    async function loadDailyContestData() {
+      const { data, error } = await supabaseClient
+        .from("daily_joke_winners")
+        .select(`
+          contest_date,
+          joke_id,
+          winner_id,
+          likes_count,
+          awarded_at,
+          joke:jokes!daily_joke_winners_joke_id_fkey (
+            id,
+            content,
+            created_at
+          ),
+          winner:profiles!daily_joke_winners_winner_id_fkey (
+            id,
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
+        .order("contest_date", { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+
+      dailyWinnerRows = (data || []).map(
+        normalizeDailyWinnerRow
+      );
+
+      dailyWinCounts = new Map();
+      dailyWinningJokeIds = new Set();
+
+      dailyWinnerRows.forEach(row => {
+        dailyWinCounts.set(
+          row.winnerId,
+          getDailyWinCount(row.winnerId) + 1
+        );
+
+        if (row.jokeId) {
+          dailyWinningJokeIds.add(row.jokeId);
+        }
+      });
+    }
+
+    function getTodayContestLeader() {
+      const todayKey = getChisinauDateKey();
+
+      const todayRecords = sharedJokes.filter(
+        record =>
+          getChisinauDateKey(
+            new Date(record.created_at)
+          ) === todayKey
+      );
+
+      if (!todayRecords.length) return null;
+
+      return [...todayRecords].sort((first, second) => {
+        const likeDifference =
+          getJokeStats(second.content).likes -
+          getJokeStats(first.content).likes;
+
+        if (likeDifference !== 0) {
+          return likeDifference;
+        }
+
+        return (
+          new Date(first.created_at).getTime() -
+          new Date(second.created_at).getTime()
+        );
+      })[0];
+    }
+
+    function contestPersonMarkup({
+      label,
+      profileId,
+      name,
+      username,
+      avatarUrl,
+      jokeId,
+      text,
+      likes,
+      winner = false
+    }) {
+      return `
+        <article class="daily-contest-result ${winner ? "winner" : "leader"}">
+          <button
+            class="daily-contest-avatar ${avatarUrl ? "has-avatar" : ""}"
+            type="button"
+            data-daily-profile-id="${profileId}"
+            ${avatarStyleAttribute(avatarUrl)}
+            aria-label="Открыть профиль ${escapeHtml(name)}"
+          >${avatarUrl ? "" : escapeHtml(getInitial(name))}</button>
+
+          <button
+            class="daily-contest-main"
+            type="button"
+            ${jokeId ? `data-daily-joke-id="${jokeId}"` : ""}
+          >
+            <span class="daily-contest-result-label">${escapeHtml(label)}</span>
+
+            <strong>
+              ${escapeHtml(name)}
+              <small>@${escapeHtml(username || "user")}</small>
+            </strong>
+
+            <p>${escapeHtml(text || "Публикация удалена")}</p>
+          </button>
+
+          <span class="daily-contest-score">
+            <span aria-hidden="true">♥</span>
+            ${likes}
+          </span>
+        </article>
+      `;
+    }
+
+    function renderDailyContest() {
+      if (!dailyContestBody) return;
+
+      const latestWinner = dailyWinnerRows[0] || null;
+      const todayLeader = getTodayContestLeader();
+
+      const previousMarkup = latestWinner
+        ? contestPersonMarkup({
+            label:
+              `Победитель ${formatContestDate(
+                latestWinner.contestDate
+              )}`,
+            profileId: latestWinner.winnerId,
+            name:
+              latestWinner.winner.display_name ||
+              "Пользователь",
+            username:
+              latestWinner.winner.username ||
+              "user",
+            avatarUrl:
+              latestWinner.winner.avatar_url ||
+              null,
+            jokeId:
+              latestWinner.jokeId ||
+              "",
+            text:
+              latestWinner.joke?.content ||
+              "Победившая публикация была удалена",
+            likes:
+              latestWinner.likesCount,
+            winner: true
+          })
+        : `
+          <div class="daily-contest-placeholder">
+            <span aria-hidden="true">🏆</span>
+            <div>
+              <strong>Победителя пока нет</strong>
+              <p>Первое звание будет назначено после 00:00.</p>
+            </div>
+          </div>
+        `;
+
+      const todayMarkup = todayLeader
+        ? contestPersonMarkup({
+            label: "Сегодня лидирует",
+            profileId: todayLeader.author_id,
+            name:
+              todayLeader.author.display_name ||
+              "Пользователь",
+            username:
+              todayLeader.author.username ||
+              "user",
+            avatarUrl:
+              todayLeader.author.avatar_url ||
+              null,
+            jokeId: todayLeader.id,
+            text: todayLeader.content,
+            likes:
+              getJokeStats(todayLeader.content).likes,
+            winner: false
+          })
+        : `
+          <button
+            class="daily-contest-empty-today"
+            type="button"
+            data-open-compose="true"
+          >
+            <span aria-hidden="true">✨</span>
+            <div>
+              <strong>Сегодня ещё нет участников</strong>
+              <p>Опубликуй анекдот и поборись за огонёк.</p>
+            </div>
+          </button>
+        `;
+
+      dailyContestBody.innerHTML = `
+        <div class="daily-contest-section">
+          <span class="daily-contest-section-title">Последний результат</span>
+          ${previousMarkup}
+        </div>
+
+        <div class="daily-contest-section">
+          <span class="daily-contest-section-title">Текущий конкурс</span>
+          ${todayMarkup}
+        </div>
+      `;
+    }
+
+    function updateDailyContestCountdown() {
+      if (!dailyContestCountdown) return;
+
+      const clock = getChisinauClockParts();
+      let secondsLeft =
+        24 * 60 * 60 -
+        (
+          clock.hour * 60 * 60 +
+          clock.minute * 60 +
+          clock.second
+        );
+
+      if (secondsLeft <= 0) {
+        secondsLeft = 24 * 60 * 60;
+      }
+
+      const hours = Math.floor(secondsLeft / 3600);
+      const minutes = Math.floor(
+        (secondsLeft % 3600) / 60
+      );
+      const seconds = secondsLeft % 60;
+
+      dailyContestCountdown.textContent =
+        `До итогов ${String(hours).padStart(2, "0")}:` +
+        `${String(minutes).padStart(2, "0")}:` +
+        `${String(seconds).padStart(2, "0")}`;
+    }
+
+    async function finalizeAndRefreshDailyContest() {
+      const { error } = await supabaseClient.rpc(
+        "finalize_daily_joke_winners"
+      );
+
+      if (error) throw error;
+
+      await loadDailyContestData();
+      renderDailyContest();
+      renderProfile();
+
+      if (activePublicProfile) {
+        const profile = getPublicProfile(
+          activePublicProfile.id
+        );
+
+        if (profile) {
+          renderPublicProfile(profile);
+        }
+      }
+
+      renderCards();
+    }
+
+    function startDailyContestClock() {
+      if (dailyContestClockTimer) {
+        window.clearInterval(dailyContestClockTimer);
+      }
+
+      lastObservedContestDate = getChisinauDateKey();
+      updateDailyContestCountdown();
+
+      dailyContestClockTimer = window.setInterval(
+        async () => {
+          updateDailyContestCountdown();
+
+          const currentDateKey =
+            getChisinauDateKey();
+
+          if (
+            currentDateKey !==
+            lastObservedContestDate
+          ) {
+            lastObservedContestDate =
+              currentDateKey;
+
+            try {
+              await finalizeAndRefreshDailyContest();
+            } catch (error) {
+              console.error(
+                "Daily contest finalize error:",
+                error
+              );
+            }
+          }
+        },
+        1000
+      );
+    }
+
+    async function initializeDailyContest() {
+      await finalizeAndRefreshDailyContest();
+      startDailyContestClock();
     }
 
     function updateSharedFeedStatus(message, state = "ready") {
@@ -6645,6 +7570,7 @@
       renderProfile();
       renderSearchResults(searchInput.value);
       renderMessenger();
+      renderDailyContest();
 
       if (activePublicProfile) {
         const profile =
@@ -6670,6 +7596,7 @@
           await loadReactionData();
           renderCards();
           renderProfile();
+          renderDailyContest();
 
           if (activePublicProfile) {
             renderPublicProfile(
@@ -6717,6 +7644,28 @@
               renderPublicProfile(profile);
             }
           }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const reloadDailyWinners = async () => {
+        try {
+          await loadDailyContestData();
+          renderDailyContest();
+          renderProfile();
+
+          if (activePublicProfile) {
+            const profile = getPublicProfile(
+              activePublicProfile.id
+            );
+
+            if (profile) {
+              renderPublicProfile(profile);
+            }
+          }
+
+          renderCards();
         } catch (error) {
           console.error(error);
         }
@@ -6794,6 +7743,15 @@
             table: "messages"
           },
           reloadMessages
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "daily_joke_winners"
+          },
+          reloadDailyWinners
         )
         .subscribe();
     }
@@ -6942,6 +7900,7 @@
       await loadDatabaseProfiles();
       await loadSharedJokes();
       await loadSocialData();
+      await initializeDailyContest();
       subscribeToSharedJokes();
       subscribeToSocialRealtime();
     }
@@ -7014,6 +7973,8 @@
     const cardArea = document.getElementById("cardArea");
     const sharedFeedStatus = document.getElementById("sharedFeedStatus");
     const messagesUnreadDot = document.getElementById("messagesUnreadDot");
+    const dailyContestCountdown = document.getElementById("dailyContestCountdown");
+    const dailyContestBody = document.getElementById("dailyContestBody");
 const pages = {
       home: document.getElementById("homePage"),
       compose: document.getElementById("composePage"),
@@ -7050,6 +8011,7 @@ const shareJokeButton = document.getElementById("shareJokeButton");
     const likedCount = document.getElementById("likedCount");
     const followersCount = document.getElementById("followersCount");
     const followingCount = document.getElementById("followingCount");
+    const ownDailyWinsCount = document.getElementById("ownDailyWinsCount");
 const myJokes = document.getElementById("myJokes");
     const profileJokeDialog = document.getElementById("profileJokeDialog");
     const profileJokeClose = document.getElementById("profileJokeClose");
@@ -7090,6 +8052,7 @@ const myJokes = document.getElementById("myJokes");
     const publicLikedCount = document.getElementById("publicLikedCount");
     const publicFollowersCount = document.getElementById("publicFollowersCount");
     const publicFollowingCount = document.getElementById("publicFollowingCount");
+    const publicDailyWinsCount = document.getElementById("publicDailyWinsCount");
     const publicProfileJokes = document.getElementById("publicProfileJokes");
     const publicFollowButton = document.getElementById("publicFollowButton");
     const publicMessageButton = document.getElementById("publicMessageButton");
@@ -7327,7 +8290,7 @@ const myJokes = document.getElementById("myJokes");
       } catch (error) {
         showAuthGate("login");
         setAuthStatus(
-          "Аккаунт найден, но таблицы базы ещё не настроены. Выполни новый файл supabase_shared_jokes.sql в SQL Editor.",
+          "Аккаунт найден, но новая таблица конкурса ещё не настроена. Выполни файл supabase_daily_contest.sql в SQL Editor.",
           "error"
         );
         console.error(error);
@@ -7555,6 +8518,13 @@ const myJokes = document.getElementById("myJokes");
             socialRealtimeChannel
           );
           socialRealtimeChannel = null;
+        }
+
+        if (dailyContestClockTimer) {
+          window.clearInterval(
+            dailyContestClockTimer
+          );
+          dailyContestClockTimer = null;
         }
 
         const { error } = await supabaseClient.auth.signOut();
@@ -7887,8 +8857,10 @@ const myJokes = document.getElementById("myJokes");
         await loadSharedJokes({
           silent: true
         });
+        await loadDailyContestData();
 
         renderProfile();
+        renderDailyContest();
         renderSearchResults(searchInput.value);
         renderMessenger();
 
@@ -7988,7 +8960,66 @@ function switchPage(pageName) {
         page.classList.toggle("active", key === pageName);
       });
 
-      navButtons.forEach(btn => {
+  
+    dailyContestBody.addEventListener("click", event => {
+      const profileButton = event.target.closest(
+        "[data-daily-profile-id]"
+      );
+
+      const jokeButton = event.target.closest(
+        "[data-daily-joke-id]"
+      );
+
+      const composeButton = event.target.closest(
+        "[data-open-compose]"
+      );
+
+      if (profileButton) {
+        const profileId =
+          profileButton.dataset.dailyProfileId;
+
+        if (
+          currentAuthUser &&
+          profileId === currentAuthUser.id
+        ) {
+          switchPage("profile");
+        } else {
+          openPublicProfile(profileId, "home");
+        }
+
+        return;
+      }
+
+      if (jokeButton) {
+        const jokeId =
+          jokeButton.dataset.dailyJokeId;
+
+        const record = sharedJokes.find(
+          item => item.id === jokeId
+        );
+
+        const historicalWinner =
+          dailyWinnerRows.find(
+            item => item.jokeId === jokeId
+          );
+
+        const text =
+          record?.content ||
+          historicalWinner?.joke?.content;
+
+        if (text) {
+          openJokeInProfileDialog(text);
+        }
+
+        return;
+      }
+
+      if (composeButton) {
+        switchPage("compose");
+      }
+    });
+
+    navButtons.forEach(btn => {
         btn.classList.toggle("active", btn.dataset.page === pageName);
       });
 
@@ -8067,6 +9098,15 @@ function switchPage(pageName) {
         : `@${ownUsername}`;
 
       const authorInitial = getInitial(authorName);
+      const authorDailyWins = sharedRecord
+        ? getDailyWinCount(sharedRecord.author_id)
+        : getDailyWinCount(currentAuthUser?.id);
+
+      const jokeIsDailyWinner = Boolean(
+        sharedRecord &&
+        isDailyWinnerJoke(sharedRecord.id)
+      );
+
       const authorAvatarUrl = sharedRecord
         ? (
             isOwnShared
@@ -8079,6 +9119,12 @@ function switchPage(pageName) {
         <span class="stamp like">НРАВИТСЯ</span>
         <span class="stamp skip">НЕ НРАВИТСЯ</span>
 
+        ${
+          jokeIsDailyWinner
+            ? `<span class="daily-winner-ribbon">🔥 Анекдот дня</span>`
+            : ""
+        }
+
         <div class="card-top">
           <div class="author">
             <button
@@ -8089,7 +9135,19 @@ function switchPage(pageName) {
             >${escapeHtml(authorInitial)}</button>
 
             <div class="author-info">
-              <strong>${escapeHtml(authorName)}</strong>
+              <div class="author-name-row">
+                <strong>${escapeHtml(authorName)}</strong>
+
+                ${
+                  authorDailyWins > 0
+                    ? `<span
+                        class="author-fire-count"
+                        title="Побед в конкурсе «Анекдот дня»"
+                      >🔥 ${authorDailyWins}</span>`
+                    : ""
+                }
+              </div>
+
               <span>${escapeHtml(authorHandle)}</span>
             </div>
           </div>
@@ -8598,6 +9656,12 @@ return;
         ownFollowCounts.followers;
       followingCount.textContent =
         ownFollowCounts.following;
+
+      ownDailyWinsCount.textContent =
+        getDailyWinCount(
+          currentAuthUser?.id
+        );
+
 if (!ownJokes.length) {
         myJokes.innerHTML = `
           <div class="empty-small">
@@ -9131,6 +10195,8 @@ if (!ownJokes.length) {
           getFollowCount(profileId).following,
         liked:
           getUserLikedCount(profileId),
+        dailyWins:
+          getDailyWinCount(profileId),
         posts
       };
     }
@@ -9157,6 +10223,9 @@ if (!ownJokes.length) {
       publicLikedCount.textContent = profile.liked;
       publicFollowersCount.textContent = profile.followers;
       publicFollowingCount.textContent = profile.following;
+      publicDailyWinsCount.textContent =
+        profile.dailyWins || 0;
+
       publicFollowButton.textContent = following ? "Вы подписаны" : "Подписаться";
       publicFollowButton.classList.toggle("following", following);
       publicFollowButton.setAttribute("aria-pressed", String(following));
