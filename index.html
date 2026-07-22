@@ -5392,6 +5392,69 @@
       color: #b9b0d3 !important;
     }
 
+
+
+    /* ============================================
+       FIX: красивый тёмный пустой экран ленты
+       ============================================ */
+    html[data-theme="dark"] .empty {
+      background:
+        radial-gradient(circle at top left, rgba(138, 104, 255, .14), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(255, 104, 189, .10), transparent 30%),
+        linear-gradient(180deg, #12101a 0%, #0d0b13 100%) !important;
+      border: 1px solid rgba(169, 147, 255, .16) !important;
+      box-shadow:
+        0 18px 42px rgba(0,0,0,.46),
+        inset 0 1px 0 rgba(255,255,255,.05);
+      color: #ffffff;
+    }
+
+    html[data-theme="dark"] .empty > div {
+      max-width: 420px;
+    }
+
+    html[data-theme="dark"] .empty h2 {
+      margin: 0 0 14px;
+      color: #ffffff !important;
+      font-size: clamp(28px, 5vw, 44px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      text-shadow: 0 6px 20px rgba(0,0,0,.35);
+    }
+
+    html[data-theme="dark"] .empty p {
+      margin: 0 0 22px;
+      color: rgba(255,255,255,.76) !important;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    html[data-theme="dark"] .empty .reset {
+      min-width: 220px;
+      padding: 16px 24px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #8f66ff, #b07cff) !important;
+      color: #fff !important;
+      box-shadow:
+        0 14px 30px rgba(125, 92, 255, .34),
+        inset 0 1px 0 rgba(255,255,255,.24);
+      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }
+
+    html[data-theme="dark"] .empty .reset:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 18px 34px rgba(125, 92, 255, .42),
+        inset 0 1px 0 rgba(255,255,255,.28);
+      filter: brightness(1.04);
+    }
+
+    html[data-theme="dark"] .empty .reset:active {
+      transform: translateY(0);
+      filter: brightness(.98);
+    }
+
 </style>
 </head>
 <body class="auth-locked">
@@ -10202,13 +10265,16 @@ if (!ownJokes.length) {
       deleteJokeButton.textContent = "Удаляем…";
 
       try {
-        const { error } = await supabaseClient
-          .from("jokes")
-          .delete()
-          .eq("id", activeJokeRecord.id)
-          .eq("author_id", currentAuthUser.id);
+        const { data: deleted, error } = await supabaseClient
+          .rpc("delete_own_joke", {
+            p_joke_id: activeJokeRecord.id
+          });
 
         if (error) throw error;
+
+        if (!deleted) {
+          throw new Error("Анекдот не найден или уже удалён.");
+        }
 
         profileJokeDialog.close();
         activeJokeInDialog = "";
@@ -10225,8 +10291,17 @@ if (!ownJokes.length) {
         renderSearchResults(searchInput.value);
       } catch (error) {
         console.error("Joke delete error:", error);
+
+        const message = String(error?.message || "");
+
         window.alert(
-          "Не удалось удалить анекдот."
+          message.includes("delete_own_joke") ||
+          message.includes("Could not find the function")
+            ? "Сначала выполни файл supabase_fix_delete_joke.sql в Supabase."
+            : message.includes("not allowed") ||
+              message.includes("Недостаточно прав")
+              ? "Удалять можно только свои анекдоты."
+              : "Не удалось удалить анекдот. Обнови страницу и попробуй ещё раз."
         );
       } finally {
         deleteJokeButton.disabled = false;
