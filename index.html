@@ -4281,6 +4281,70 @@
       }
     }
 
+  
+    /* Общая Supabase-лента */
+    .swipe-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .shared-feed-status {
+      flex: 0 0 auto;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: var(--primary);
+      background: rgba(112,80,255,.10);
+      font-size: 9px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .shared-feed-status[data-state="loading"] {
+      animation: sharedFeedPulse 1.2s ease-in-out infinite;
+    }
+
+    .shared-feed-status[data-state="error"] {
+      color: var(--like);
+      background: rgba(239,71,111,.10);
+    }
+
+    @keyframes sharedFeedPulse {
+      0%, 100% { opacity: .55; }
+      50% { opacity: 1; }
+    }
+
+    html[data-theme="dark"] .shared-feed-status {
+      color: #c7b6ff;
+      background: rgba(154,124,255,.16);
+    }
+
+    @media (max-width: 480px) {
+      .swipe-banner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+  
+    .messenger-real-empty {
+      min-width: 210px;
+      padding: 12px 14px;
+      border: 1px dashed var(--border);
+      border-radius: 15px;
+      color: var(--muted);
+      background: var(--surface-2);
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    html[data-theme="dark"] .messenger-real-empty {
+      color: var(--muted);
+      border-color: var(--border);
+      background: #1b1825;
+    }
   </style>
 </head>
 <body class="auth-locked">
@@ -4506,7 +4570,10 @@
 
     <main>
       <section id="homePage" class="page active">
-        <div class="swipe-banner">Лента анекдотов • свайп влево — нравится, вправо — не нравится</div>
+        <div class="swipe-banner">
+          <span>Общая лента • свайп влево — нравится, вправо — не нравится</span>
+          <span id="sharedFeedStatus" class="shared-feed-status">Подключение…</span>
+        </div>
         <div id="cardArea" class="card-area"></div>
         <p class="hint">Листай карточки пальцем или мышкой</p>
       </section>
@@ -5291,114 +5358,75 @@
       }
     );
 
-    const defaultJokes = [
-  "Я решил начать новую жизнь с понедельника. Понедельник посмотрел на меня и попросил не втягивать его в это.",
-  "Будильник — это устройство, которое каждое утро спрашивает: «Ты точно хотел быть продуктивным?»",
-  "Купил умные часы. Теперь они тоже знают, что я опаздываю.",
-  "Мой план на день был прекрасен, пока день не узнал о моём плане.",
-  "Я не ленивый. Я просто работаю в режиме энергосбережения.",
-  "Хотел навести порядок на столе. Нашёл старую шоколадку и решил, что день уже прошёл не зря.",
-  "Телефон разрядился на 2%. Теперь мы оба понимаем друг друга.",
-  "Иногда я разговариваю сам с собой. Нужен же мне хоть один специалист.",
-  "Зашёл на кухню за водой. Вышел с бутербродом и без воды.",
-  "Самая короткая история ужасов: «Завтра контрольная».",
-  "Учитель спросил, почему я опоздал. Я ответил: «Хотел прийти раньше, но уже было поздно».",
-  "Мама сказала убрать комнату. Я выключил свет — беспорядок исчез.",
-  "Мой кот уверен, что квартира принадлежит ему. Я просто оплачиваю коммунальные услуги.",
-  "Кофе не решает проблемы. Но после кофе проблемы хотя бы боятся подойти.",
-  "Я поставил себе цель вставать раньше. Теперь каждое утро встаю раньше, чтобы выключить будильник.",
-  "Пошёл в магазин только за хлебом. Вернулся с пакетом всего, кроме хлеба.",
-  "Моя память отличная. Просто она иногда работает удалённо.",
-  "В холодильнике всегда есть свет, но никогда нет ответа, зачем я его открыл.",
-  "Решил экономить деньги. Теперь просто смотрю на товары и ухожу.",
-  "Я не забыл домашнее задание. Я дал ему шанс побыть самостоятельным.",
-  "Компьютер предложил обновиться. Я тоже предложил ему сделать это когда-нибудь потом.",
-  "Если долго смотреть на список дел, некоторые дела начинают казаться необязательными.",
-  "Я занимаюсь спортом каждый день: бегаю глазами по меню.",
-  "Весы показали странную цифру. Видимо, им тоже нужен отпуск.",
-  "Хотел приготовить полезный ужин. Но пицца уже знала мой адрес.",
-  "В детстве я боялся темноты. Теперь я боюсь счетов за свет.",
-  "Мой кошелёк похож на лук: когда открываю, хочется плакать.",
-  "Спросил у навигатора короткую дорогу. Он решил показать мне весь город.",
-  "Дождь начинается именно тогда, когда ты решил не брать зонт.",
-  "Я умею быстро принимать решения. Особенно неправильные.",
-  "Прочитал книгу о силе воли. Отложил её на потом.",
-  "Мой рабочий стол настолько организован, что я ничего не могу найти.",
-  "Сосед начал ремонт в восемь утра. Теперь у меня тоже есть расписание.",
-  "Хотел лечь спать пораньше. Интернет сказал: «Посмотри ещё одно видео».",
-  "У меня идеальная осанка, когда кто-то заходит в комнату.",
-  "Я не спорю. Я просто подробно объясняю, почему прав.",
-  "Проверил банковский счёт. Деньги играют в прятки очень профессионально.",
-  "На собеседовании спросили о моих слабостях. Я ответил: «Слишком честный». Они сказали, что это не слабость. Я ответил: «Мне всё равно, что вы думаете».",
-  "Начальник сказал думать шире. Я открыл таблицу на весь экран.",
-  "Работа научила меня многому. Например, ценить выходные.",
-  "Я пришёл на работу первым. Потом понял, что сегодня воскресенье.",
-  "Коллега спросил, занят ли я. Я посмотрел на пустой документ и сказал: «Очень».",
-  "Совещание — это место, где минуты ведут, а часы теряют.",
-  "На работе я незаменим. Особенно когда нужно найти зарядку.",
-  "Отправил письмо без вложения. Теперь у письма будет продолжение.",
-  "Поставил статус «не беспокоить». Все решили проверить, почему.",
-  "Рабочий день прошёл продуктивно: я составил список задач на завтра.",
-  "Начальник сказал проявить инициативу. Я первым ушёл на обед.",
-  "У меня гибкий график: работа легко растягивается на весь день.",
-  "Клавиатура знает обо мне больше, чем резюме.",
-  "Учитель: «Где твоя тетрадь?» Ученик: «Она дома, изучает тему самостоятельно».",
-  "На уроке тишина была такой громкой, что учитель сразу понял: что-то случилось.",
-  "Я сделал домашнее задание во сне. Жаль, учитель проверяет только наяву.",
-  "Контрольная показала, что вопросы тоже могут быть неожиданными.",
-  "Я поднял руку на уроке. Просто хотел проверить, работает ли она.",
-  "Учебник открылся на нужной странице. Это был самый успешный момент урока.",
-  "Учитель сказал писать разборчиво. Теперь я сам не понимаю, что написал.",
-  "В школе учат считать. Особенно минуты до звонка.",
-  "Самая популярная школьная дисциплина — ожидание перемены.",
-  "Я подготовился к уроку: принёс ручку. Остальное было неожиданностью.",
-  "Папа сказал, что в его время телефонов не было. Видимо, поэтому он всё помнит.",
-  "Мама может найти вещь, которую ты искал час, за три секунды и один взгляд.",
-  "Семейный совет начинается словами: «Мы не ругаемся, мы просто обсуждаем».",
-  "Бабушка считает, что ты голодный, даже если ты только что поел.",
-  "Попросили вынести мусор. Я вынес его из комнаты в коридор. Первый этап завершён.",
-  "Домашние питомцы знают точное время еды, но не признают часы.",
-  "Когда мама говорит «делай что хочешь», лучше ничего не делать.",
-  "Папа чинит всё двумя инструментами: отвёрткой и уверенностью.",
-  "В семье каждый имеет своё мнение. Но пульт один.",
-  "Гости ушли, и квартира снова стала нашей.",
-  "Кот смотрит на пустую миску так, будто я разрушил его будущее.",
-  "Собака радуется каждому возвращению домой, даже если ты выходил за хлебом.",
-  "Кот сбросил кружку со стола и посмотрел так, будто проверял закон притяжения.",
-  "Мой кот не будит меня утром. Он проводит срочную эвакуацию одеяла.",
-  "Собака принесла палку. Теперь у нас совместный строительный проект.",
-  "Кот сидит на клавиатуре, потому что считает себя главным сообщением.",
-  "Питомец просит еду так, будто его не кормили с прошлого века.",
-  "Кот услышал слово «ветеринар» и внезапно стал частью интерьера.",
-  "Собака знает команду «место», но предпочитает моё место.",
-  "Рыбки молчат, потому что знают слишком много.",
-  "Навигатор сказал повернуть направо. Я повернул налево, чтобы показать независимость.",
-  "Автобус приходит сразу после того, как ты решил идти пешком.",
-  "В машине загорелась лампочка. Теперь у панели приборов праздничное настроение.",
-  "Я помыл машину. Через десять минут начался дождь — сервис с доставкой.",
-  "На парковке я не потерял машину. Я просто провожу исследование территории.",
-  "Таксист сказал, что знает короткий путь. Теперь я знаю новые районы.",
-  "Пешеходный переход — место, где водитель и пешеход проверяют веру друг в друга.",
-  "Ехал по навигатору и оказался там, где навигатор сам задумался.",
-  "Заправил полный бак. Кошелёк теперь едет налегке.",
-  "Автомобильный кондиционер работает идеально, пока он не нужен.",
-  "Интернет пропал на пять минут. Семья познакомилась заново.",
-  "Пароль должен содержать восемь символов, цифру, знак и воспоминание о первой любви.",
-  "Телефон упал экраном вниз. Эти три секунды были очень длинными.",
-  "Удалил ненужные фотографии. Освободил место для новых ненужных фотографий.",
-  "Компьютер завис, потому что тоже решил сделать перерыв.",
-  "Кнопка «Я прочитал условия» — самая популярная художественная литература.",
-  "Wi-Fi работает лучше всего рядом с роутером и хуже всего рядом с дедлайном.",
-  "Обновление программы исправило ошибки и добавило новые впечатления.",
-  "Телефон знает моё лицо даже утром. Вот что значит настоящая дружба.",
-  "Зарядка всегда лежит там, где ты уже трижды посмотрел."
-];
+    const defaultJokes = [];
 
-    const savedUserJokes = JSON.parse(
+    let savedUserJokes = JSON.parse(
       localStorage.getItem("userJokes") || "[]"
     );
 
-    const jokes = [...savedUserJokes, ...defaultJokes];
+    let sharedJokes = [];
+    let jokes = [];
+    let sharedJokeByKey = new Map();
+    let databaseProfiles = new Map();
+    let sharedJokesChannel = null;
+    let sharedJokesReady = false;
+
+    function rebuildJokeCollections() {
+      sharedJokeByKey = new Map();
+
+      sharedJokes.forEach(record => {
+        sharedJokeByKey.set(jokeKey(record.content), record);
+
+        if (record.author_id && record.author) {
+          databaseProfiles.set(record.author_id, {
+            id: record.author_id,
+            username: record.author.username,
+            display_name: record.author.display_name,
+            bio: record.author.bio || "",
+            avatar_url: record.author.avatar_url || null
+          });
+        }
+      });
+
+      const uniqueTexts = [];
+      const seenTexts = new Set();
+
+      [
+        ...sharedJokes.map(record => record.content),
+        ...savedUserJokes
+      ].forEach(text => {
+        if (
+          typeof text !== "string" ||
+          !text.trim() ||
+          seenTexts.has(text)
+        ) {
+          return;
+        }
+
+        seenTexts.add(text);
+        uniqueTexts.push(text);
+      });
+
+      jokes = uniqueTexts;
+    }
+
+    function getSharedJokeRecord(joke) {
+      return sharedJokeByKey.get(jokeKey(joke)) || null;
+    }
+
+    function getOwnJokeRecords() {
+      if (!currentAuthUser) return [];
+
+      return sharedJokes.filter(
+        record => record.author_id === currentAuthUser.id
+      );
+    }
+
+    function getOwnJokeTexts() {
+      return getOwnJokeRecords().map(record => record.content);
+    }
+
+    rebuildJokeCollections();
 
     let jokeStats = JSON.parse(
       localStorage.getItem("realJokeStatsV1") || "{}"
@@ -5514,6 +5542,263 @@
       getJokeStats(joke);
     });
 
+    function normalizeSharedJokeRow(row) {
+      const author = Array.isArray(row.author)
+        ? row.author[0]
+        : row.author;
+
+      return {
+        id: row.id,
+        author_id: row.author_id,
+        content: row.content,
+        created_at: row.created_at,
+        author: author || {
+          id: row.author_id,
+          username: "user",
+          display_name: "Пользователь",
+          bio: "",
+          avatar_url: null
+        }
+      };
+    }
+
+    function updateSharedFeedStatus(message, state = "ready") {
+      sharedFeedStatus.textContent = message;
+      sharedFeedStatus.dataset.state = state;
+    }
+
+    async function loadDatabaseProfiles() {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select(`
+          id,
+          username,
+          display_name,
+          bio,
+          avatar_url,
+          created_at
+        `)
+        .order("created_at", { ascending: true })
+        .limit(1000);
+
+      if (error) throw error;
+
+      databaseProfiles = new Map(
+        (data || []).map(profile => [
+          profile.id,
+          {
+            id: profile.id,
+            username: profile.username,
+            display_name: profile.display_name,
+            bio: profile.bio || "",
+            avatar_url: profile.avatar_url || null
+          }
+        ])
+      );
+
+      const realContacts = (data || [])
+        .filter(profile =>
+          !currentAuthUser ||
+          profile.id !== currentAuthUser.id
+        )
+        .map(profile => ({
+          id: profile.id,
+          name: profile.display_name || "Пользователь",
+          handle: `@${profile.username}`,
+          initial: getInitial(profile.display_name),
+          bio: profile.bio || "",
+          followers: 0,
+          following: 0,
+          liked: 0
+        }));
+
+      messengerContacts.splice(
+        0,
+        messengerContacts.length,
+        ...realContacts
+      );
+
+      const activeContactExists = messengerContacts.some(
+        contact => contact.id === activeContactId
+      );
+
+      if (!activeContactExists) {
+        activeContactId = messengerContacts[0]?.id || null;
+
+        if (activeContactId) {
+          localStorage.setItem(
+            "activeMessengerContact",
+            activeContactId
+          );
+        } else {
+          localStorage.removeItem("activeMessengerContact");
+        }
+      }
+    }
+
+    function refreshSharedJokeSurfaces() {
+      if (currentIndex >= jokes.length) {
+        currentIndex = 0;
+      }
+
+      renderCards();
+      renderSearchResults(searchInput.value);
+      renderProfile();
+      renderMessenger();
+
+      if (activePublicProfile) {
+        const refreshedProfile = getPublicProfile(activePublicProfile.id);
+        if (refreshedProfile) {
+          renderPublicProfile(refreshedProfile);
+        }
+      }
+    }
+
+    async function loadSharedJokes(options = {}) {
+      const { silent = false } = options;
+
+      if (!silent) {
+        updateSharedFeedStatus("Загрузка…", "loading");
+      }
+
+      const { data, error } = await supabaseClient
+        .from("jokes")
+        .select(`
+          id,
+          author_id,
+          content,
+          created_at,
+          author:profiles!jokes_author_id_fkey (
+            id,
+            username,
+            display_name,
+            bio,
+            avatar_url
+          )
+        `)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+
+      sharedJokes = (data || []).map(normalizeSharedJokeRow);
+      rebuildJokeCollections();
+      sharedJokesReady = true;
+
+      updateSharedFeedStatus(
+        `${sharedJokes.length} в общей ленте`,
+        "ready"
+      );
+
+      refreshSharedJokeSurfaces();
+    }
+
+    async function migrateLegacyLocalJokes() {
+      if (
+        !currentAuthUser ||
+        !Array.isArray(savedUserJokes) ||
+        !savedUserJokes.length
+      ) {
+        return;
+      }
+
+      const migrationKey =
+        `sharedJokesMigrationV1:${currentAuthUser.id}`;
+
+      if (localStorage.getItem(migrationKey) === "done") {
+        savedUserJokes = [];
+        localStorage.removeItem("userJokes");
+        rebuildJokeCollections();
+        return;
+      }
+
+      const rows = savedUserJokes
+        .filter(
+          text =>
+            typeof text === "string" &&
+            text.trim().length >= 5
+        )
+        .map(content => ({
+          author_id: currentAuthUser.id,
+          content: content.trim()
+        }));
+
+      if (!rows.length) {
+        localStorage.setItem(migrationKey, "done");
+        savedUserJokes = [];
+        localStorage.removeItem("userJokes");
+        return;
+      }
+
+      const { error } = await supabaseClient
+        .from("jokes")
+        .upsert(rows, {
+          onConflict: "author_id,content",
+          ignoreDuplicates: true
+        });
+
+      if (error) throw error;
+
+      localStorage.setItem(migrationKey, "done");
+      savedUserJokes = [];
+      localStorage.removeItem("userJokes");
+    }
+
+    function subscribeToSharedJokes() {
+      if (sharedJokesChannel) {
+        supabaseClient.removeChannel(sharedJokesChannel);
+      }
+
+      sharedJokesChannel = supabaseClient
+        .channel("public-jokes-feed")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "jokes"
+          },
+          () => {
+            loadSharedJokes({ silent: true }).catch(error => {
+              console.error("Realtime jokes refresh error:", error);
+            });
+          }
+        )
+        .subscribe(status => {
+          if (status === "SUBSCRIBED") {
+            updateSharedFeedStatus(
+              `${sharedJokes.length} в общей ленте`,
+              "ready"
+            );
+          }
+        });
+    }
+
+    async function initializeSharedJokes() {
+      updateSharedFeedStatus("Подключение…", "loading");
+      await migrateLegacyLocalJokes();
+      await loadDatabaseProfiles();
+      await loadSharedJokes();
+      subscribeToSharedJokes();
+    }
+
+    async function publishSharedJoke(content) {
+      if (!currentAuthUser) {
+        throw new Error("Сначала войди в аккаунт.");
+      }
+
+      const { error } = await supabaseClient
+        .from("jokes")
+        .insert({
+          author_id: currentAuthUser.id,
+          content
+        });
+
+      if (error) throw error;
+
+      await loadSharedJokes({ silent: true });
+    }
+
 
     let currentIndex = 0;
     let currentPage = "home";
@@ -5550,6 +5835,7 @@
     const settingsAccountEmail = document.getElementById("settingsAccountEmail");
 
     const cardArea = document.getElementById("cardArea");
+    const sharedFeedStatus = document.getElementById("sharedFeedStatus");
 const pages = {
       home: document.getElementById("homePage"),
       compose: document.getElementById("composePage"),
@@ -5813,12 +6099,13 @@ const myJokes = document.getElementById("myJokes");
       try {
         const profile = await ensureDatabaseProfile(session.user);
         applyAuthenticatedProfile(session.user, profile);
+        await initializeSharedJokes();
         showAuthenticatedApp();
         renderProfile();
       } catch (error) {
         showAuthGate("login");
         setAuthStatus(
-          "Аккаунт найден, но таблица profiles ещё не настроена. Сначала выполни файл supabase_setup.sql в SQL Editor.",
+          "Аккаунт найден, но таблицы базы ещё не настроены. Выполни новый файл supabase_shared_jokes.sql в SQL Editor.",
           "error"
         );
         console.error(error);
@@ -6034,9 +6321,16 @@ const myJokes = document.getElementById("myJokes");
       signOutButton.textContent = "Выходим...";
 
       try {
+        if (sharedJokesChannel) {
+          await supabaseClient.removeChannel(sharedJokesChannel);
+          sharedJokesChannel = null;
+        }
+
         const { error } = await supabaseClient.auth.signOut();
         if (error) throw error;
 
+        sharedJokes = [];
+        rebuildJokeCollections();
         closeSettings();
         showAuthGate("login");
       } catch (error) {
@@ -6209,6 +6503,42 @@ function switchPage(pageName) {
       if (position === 1) card.classList.add("back-1");
       if (position === 2) card.classList.add("back-2");
 
+      const sharedRecord = getSharedJokeRecord(joke);
+      const isOwnShared =
+        Boolean(
+          sharedRecord &&
+          currentAuthUser &&
+          sharedRecord.author_id === currentAuthUser.id
+        );
+
+      const ownName =
+        currentDatabaseProfile?.display_name ||
+        currentAuthUser?.user_metadata?.display_name ||
+        "Мой профиль";
+
+      const ownUsername =
+        currentDatabaseProfile?.username ||
+        normalizeUsername(
+          currentAuthUser?.user_metadata?.username
+        ) ||
+        "me";
+
+      const authorProfileId = sharedRecord
+        ? (isOwnShared ? "me" : sharedRecord.author_id)
+        : "me";
+
+      const authorName = sharedRecord
+        ? (isOwnShared
+            ? ownName
+            : sharedRecord.author.display_name)
+        : ownName;
+
+      const authorHandle = sharedRecord
+        ? `@${sharedRecord.author.username}`
+        : `@${ownUsername}`;
+
+      const authorInitial = getInitial(authorName);
+
       card.innerHTML = `
         <span class="stamp like">НРАВИТСЯ</span>
         <span class="stamp skip">НЕ НРАВИТСЯ</span>
@@ -6218,21 +6548,13 @@ function switchPage(pageName) {
             <button
               class="avatar author-profile-trigger"
               type="button"
-              data-profile-id="${
-                index < savedUserJokes.length
-                  ? "me"
-                  : "user" + ((index % 12) + 1)
-              }"
-              aria-label="${
-                index < savedUserJokes.length
-                  ? "Открыть мой профиль"
-                  : "Открыть профиль автора " + ((index % 12) + 1)
-              }"
-            >${index < savedUserJokes.length ? "Я" : "А"}</button>
+              data-profile-id="${authorProfileId}"
+              aria-label="Открыть профиль ${escapeHtml(authorName)}"
+            >${escapeHtml(authorInitial)}</button>
 
             <div class="author-info">
-              <strong>${index < savedUserJokes.length ? "Мой анекдот" : "Автор " + ((index % 12) + 1)}</strong>
-              <span>${index < savedUserJokes.length ? "@me" : "@user" + ((index % 12) + 1)}</span>
+              <strong>${escapeHtml(authorName)}</strong>
+              <span>${escapeHtml(authorHandle)}</span>
             </div>
           </div>
           <span class="tag">Анекдот</span>
@@ -6364,6 +6686,28 @@ function switchPage(pageName) {
       if (currentPage !== "home") return;
 
       cardArea.innerHTML = "";
+
+      if (!jokes.length) {
+        cardArea.innerHTML = `
+          <div class="empty">
+            <div>
+              <h2>В общей ленте пока нет анекдотов</h2>
+              <p>Опубликуй первый анекдот — его увидят другие пользователи.</p>
+              <button class="reset" id="createFirstJokeButton">
+                Добавить анекдот
+              </button>
+            </div>
+          </div>
+        `;
+
+        document
+          .getElementById("createFirstJokeButton")
+          .addEventListener("click", () => {
+            switchPage("compose");
+          });
+
+        return;
+      }
 
       if (currentIndex >= jokes.length) {
         cardArea.innerHTML = `
@@ -6498,47 +6842,50 @@ return;
       publishButton.disabled = newJokeInput.value.trim().length < 5;
     });
 
-    jokeForm.addEventListener("submit", event => {
+    jokeForm.addEventListener("submit", async event => {
       event.preventDefault();
 
       const jokeText = newJokeInput.value.trim();
-      if (jokeText.length < 5) return;
+      if (jokeText.length < 5 || !currentAuthUser) return;
 
-      savedUserJokes.unshift(jokeText);
-      localStorage.setItem("userJokes", JSON.stringify(savedUserJokes));
-
-      const newJokeKey = jokeKey(jokeText);
-
-      if (!jokeStats[newJokeKey]) {
-        jokeStats[newJokeKey] = {
-          likes: 0,
-          dislikes: 0
-        };
-        saveReactionData();
-      }
-
-      jokes.unshift(jokeText);
-      currentIndex = 0;
-
-      jokeForm.reset();
-      characterCount.textContent = "0";
+      const idleText = "Опубликовать";
       publishButton.disabled = true;
-renderCards();
-      renderProfile();
-      renderSearchResults(searchInput.value.trim());
-      switchPage("home");
-      showToast("Анекдот опубликован");
+      publishButton.textContent = "Публикуем…";
+
+      try {
+        await publishSharedJoke(jokeText);
+        currentIndex = 0;
+
+        jokeForm.reset();
+        characterCount.textContent = "0";
+        renderCards();
+        renderProfile();
+        renderSearchResults(searchInput.value.trim());
+        switchPage("home");
+      } catch (error) {
+        console.error(error);
+
+        const message =
+          String(error?.message || "").includes("duplicate")
+            ? "Такой анекдот уже опубликован в твоём профиле."
+            : "Не удалось опубликовать анекдот. Проверь подключение и настройки Supabase.";
+
+        window.alert(message);
+      } finally {
+        publishButton.textContent = idleText;
+        publishButton.disabled =
+          newJokeInput.value.trim().length < 5;
+      }
     });
 
     function getAllSearchableProfiles() {
-      const contacts = messengerContacts.map(contact => getContactProfile(contact.id));
-      const authors = Array.from({ length: 12 }, (_, index) => getFeedAuthorProfile(`user${index + 1}`));
-      const seen = new Set();
-      return [...contacts, ...authors].filter(profile => {
-        if (!profile || seen.has(profile.id)) return false;
-        seen.add(profile.id);
-        return true;
-      });
+      return [...databaseProfiles.keys()]
+        .filter(id =>
+          !currentAuthUser ||
+          id !== currentAuthUser.id
+        )
+        .map(id => getDatabasePublicProfile(id))
+        .filter(Boolean);
     }
 
     function renderSearchResults(query = "") {
@@ -6648,12 +6995,13 @@ renderCards();
     }
 
     function renderProfile() {
-      myPostsCount.textContent = savedUserJokes.length;
+      const ownJokes = getOwnJokeTexts();
+      myPostsCount.textContent = ownJokes.length;
       likedCount.textContent = getLikedVotesCount();
       followersCount.textContent =
         Number(profileSocialStats.followers) || 0;
       followingCount.textContent = followedProfileIds.size;
-if (!savedUserJokes.length) {
+if (!ownJokes.length) {
         myJokes.innerHTML = `
           <div class="empty-small">
             <strong>Пока нет своих анекдотов</strong>
@@ -6663,7 +7011,7 @@ if (!savedUserJokes.length) {
         return;
       }
 
-      myJokes.innerHTML = savedUserJokes.map((joke, index) => {
+      myJokes.innerHTML = ownJokes.map((joke, index) => {
         const stats = getJokeStats(joke);
 
         return `
@@ -6775,7 +7123,7 @@ if (!savedUserJokes.length) {
     }
 
     function openProfileJoke(index) {
-      openJokeInProfileDialog(savedUserJokes[index]);
+      openJokeInProfileDialog(getOwnJokeTexts()[index]);
     }
 
     myJokes.addEventListener("click", event => {
@@ -6883,38 +7231,7 @@ if (!savedUserJokes.length) {
     });
 
 
-    const messengerContacts = [
-      {
-        id: "masha",
-        name: "Маша",
-        handle: "@masha",
-        initial: "М",
-        bio: "Люблю добрые анекдоты и отправляю друзьям всё самое смешное.",
-        followers: 284,
-        following: 146,
-        liked: 57
-      },
-      {
-        id: "alex",
-        name: "Алекс",
-        handle: "@alex_fun",
-        initial: "А",
-        bio: "Собираю короткие шутки и всегда ищу новый повод улыбнуться.",
-        followers: 419,
-        following: 203,
-        liked: 91
-      },
-      {
-        id: "ira",
-        name: "Ира",
-        handle: "@ira_smile",
-        initial: "И",
-        bio: "Публикую жизненные анекдоты и смешные наблюдения.",
-        followers: 337,
-        following: 178,
-        liked: 74
-      }
-    ];
+    const messengerContacts = [];
 
     function ensureMessengerContact(profile) {
       const existing = messengerContacts.find(contact => contact.id === profile.id);
@@ -6941,54 +7258,35 @@ if (!savedUserJokes.length) {
       switchPage("messages");
     }
 
-    function getFeedAuthorProfile(profileId) {
-      const match = /^user(\d+)$/.exec(profileId);
-      if (!match) return null;
+    function getContactProfile(profileId) {
+      return getDatabasePublicProfile(profileId);
+    }
 
-      const authorNumber = Number(match[1]);
-      if (authorNumber < 1 || authorNumber > 12) return null;
+    function getDatabasePublicProfile(profileId) {
+      const profile = databaseProfiles.get(profileId);
+      if (!profile) return null;
 
-      const posts = defaultJokes.filter((joke, defaultIndex) => {
-        const fullIndex = savedUserJokes.length + defaultIndex;
-        return ((fullIndex % 12) + 1) === authorNumber;
-      });
+      const posts = sharedJokes
+        .filter(record => record.author_id === profileId)
+        .map(record => record.content);
 
       return {
         id: profileId,
-        name: `Автор ${authorNumber}`,
-        handle: `@user${authorNumber}`,
-        initial: "А",
-        bio: "Публикую короткие анекдоты, забавные истории и наблюдения из жизни.",
-        followers: 96 + authorNumber * 37,
-        following: 28 + authorNumber * 9,
-        liked: 14 + authorNumber * 6,
-        posts
-      };
-    }
-
-    function getContactProfile(profileId) {
-      const contact = messengerContacts.find(item => item.id === profileId);
-      if (!contact) return null;
-
-      const contactIndex = messengerContacts.findIndex(
-        item => item.id === profileId
-      );
-
-      const posts = defaultJokes.filter(
-        (joke, index) => index % messengerContacts.length === contactIndex
-      ).slice(0, 10);
-
-      return {
-        ...contact,
+        name: profile.display_name || "Пользователь",
+        handle: `@${profile.username || "user"}`,
+        initial: getInitial(profile.display_name),
+        bio:
+          profile.bio ||
+          "Публикует анекдоты в общей ленте.",
+        followers: 0,
+        following: 0,
+        liked: 0,
         posts
       };
     }
 
     function getPublicProfile(profileId) {
-      return (
-        getContactProfile(profileId) ||
-        getFeedAuthorProfile(profileId)
-      );
+      return getDatabasePublicProfile(profileId);
     }
 
     function renderPublicProfile(profile) {
@@ -7109,7 +7407,7 @@ if (!savedUserJokes.length) {
 
     let activeContactId =
       localStorage.getItem("activeMessengerContact") ||
-      messengerContacts[0].id;
+      null;
 
     let messengerStore = JSON.parse(
       localStorage.getItem("messengerStoreV1") || "{}"
@@ -7125,20 +7423,10 @@ if (!savedUserJokes.length) {
     }
 
     function ensureConversation(contactId) {
+      if (!contactId) return [];
+
       if (!Array.isArray(messengerStore[contactId])) {
-        const contact = messengerContacts.find(
-          item => item.id === contactId
-        );
-
-        messengerStore[contactId] = [
-          {
-            type: "text",
-            direction: "incoming",
-            text: `Привет! Это чат с ${contact ? contact.name : "пользователем"}.`,
-            time: currentMessageTime()
-          }
-        ];
-
+        messengerStore[contactId] = [];
         saveMessengerStore();
       }
 
@@ -7273,10 +7561,19 @@ if (!savedUserJokes.length) {
     function getActiveContact() {
       return messengerContacts.find(
         contact => contact.id === activeContactId
-      ) || messengerContacts[0];
+      ) || null;
     }
 
     function renderContacts() {
+      if (!messengerContacts.length) {
+        contactsStrip.innerHTML = `
+          <div class="messenger-real-empty">
+            Других пользователей пока нет
+          </div>
+        `;
+        return;
+      }
+
       contactsStrip.innerHTML = messengerContacts.map(contact => `
         <button
           class="contact-button ${contact.id === activeContactId ? "active" : ""}"
@@ -7291,6 +7588,26 @@ if (!savedUserJokes.length) {
 
     function renderChat() {
       const contact = getActiveContact();
+
+      if (!contact) {
+        chatAvatar.textContent = "—";
+        chatName.textContent = "Нет собеседника";
+        chatHandle.textContent =
+          "Найди зарегистрированного пользователя";
+
+        chatMessages.innerHTML = `
+          <div class="chat-empty">
+            Здесь будут диалоги с настоящими пользователями.
+          </div>
+        `;
+
+        messageText.disabled = true;
+        sendMessageButton.disabled = true;
+        shareJokeButton.disabled = true;
+        return;
+      }
+
+      messageText.disabled = false;
       const conversation = ensureConversation(contact.id);
 
       chatAvatar.textContent = contact.initial;
@@ -7326,7 +7643,7 @@ if (!savedUserJokes.length) {
     let selectedOwnJokeIndex = 0;
 
     function getShareableJokes() {
-      return savedUserJokes.filter(
+      return getOwnJokeTexts().filter(
         joke => typeof joke === "string" && joke.trim()
       );
     }
@@ -7444,7 +7761,7 @@ shareJokeButton.disabled = true;
       event.preventDefault();
 
       const text = messageText.value.trim();
-      if (!text) return;
+      if (!text || !activeContactId) return;
 
       const conversation = ensureConversation(activeContactId);
 
@@ -7475,7 +7792,7 @@ shareJokeButton.disabled = true;
       const ownJokes = getShareableJokes();
       const selectedJoke = ownJokes[selectedOwnJokeIndex];
 
-      if (!selectedJoke) return;
+      if (!selectedJoke || !activeContactId) return;
 
       const conversation = ensureConversation(activeContactId);
 
