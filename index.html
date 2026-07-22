@@ -4345,6 +4345,96 @@
       border-color: var(--border);
       background: #1b1825;
     }
+  
+    /* Убираем синий квадрат и системную подсветку при нажатии */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button,
+    [role="button"],
+    a,
+    input,
+    textarea,
+    select {
+      outline: none;
+    }
+
+    button:focus:not(:focus-visible),
+    [role="button"]:focus:not(:focus-visible),
+    a:focus:not(:focus-visible) {
+      outline: none;
+      box-shadow: none;
+    }
+
+    button:focus-visible,
+    [role="button"]:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible {
+      outline: 2px solid rgba(112,80,255,.46);
+      outline-offset: 2px;
+    }
+
+    button::-moz-focus-inner {
+      border: 0;
+    }
+
+    .message-plane-icon-wrap {
+      position: relative;
+    }
+
+    .messages-unread-dot {
+      position: absolute;
+      z-index: 20;
+      top: 1px;
+      right: 2px;
+      width: 11px;
+      height: 11px;
+      border: 2px solid rgba(42,36,55,.96);
+      border-radius: 50%;
+      background: #ff315f;
+      box-shadow:
+        0 3px 9px rgba(255,49,95,.48);
+      pointer-events: none;
+      transform: scale(0);
+      opacity: 0;
+      transition:
+        transform .18s ease,
+        opacity .18s ease;
+    }
+
+    .messages-unread-dot.visible {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    .contact-button {
+      position: relative;
+    }
+
+    .contact-unread-dot {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      width: 8px;
+      height: 8px;
+      border: 2px solid var(--surface);
+      border-radius: 50%;
+      background: #ff315f;
+      box-shadow:
+        0 2px 7px rgba(255,49,95,.42);
+    }
+
+    html[data-theme="dark"] .messages-unread-dot {
+      border-color: #211c2b;
+    }
+
+    html[data-theme="dark"] .contact-unread-dot {
+      border-color: #1b1825;
+    }
+
   </style>
 </head>
 <body class="auth-locked">
@@ -5035,6 +5125,12 @@
 
       <button class="nav-button nav-messages-button" data-page="messages" type="button" aria-label="Сообщения">
         <span class="nav-icon-wrap message-plane-icon-wrap" aria-hidden="true">
+          <span
+            id="messagesUnreadDot"
+            class="messages-unread-dot"
+            aria-label="Есть непрочитанные сообщения"
+            hidden
+          ></span>
           <svg class="message-plane-icon" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="planeGlassLeft" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -5428,37 +5524,33 @@
 
     rebuildJokeCollections();
 
-    let jokeStats = JSON.parse(
-      localStorage.getItem("realJokeStatsV1") || "{}"
-    );
-
-    let userVotes = JSON.parse(
-      localStorage.getItem("realUserVotesV1") || "{}"
-    );
-
-    let jokeComments = JSON.parse(
-      localStorage.getItem("jokeCommentsV1") || "{}"
-    );
-
-    function saveComments() {
-      localStorage.setItem("jokeCommentsV1", JSON.stringify(jokeComments));
-    }
+    let jokeStats = {};
+    let userVotes = {};
+    let jokeComments = {};
+    let reactionRows = [];
+    let followRows = [];
+    let followedProfileIds = new Set();
+    let followCounts = new Map();
+    let unreadMessagesCount = 0;
+    let unreadByContact = new Map();
+    let socialRealtimeChannel = null;
 
     function getComments(joke) {
-      const key = jokeKey(joke);
-      if (!Array.isArray(jokeComments[key])) jokeComments[key] = [];
-      return jokeComments[key];
+      return jokeComments[jokeKey(joke)] || [];
     }
 
     function getTotalCommentCount(joke) {
       return getComments(joke).reduce(
-        (total, comment) => total + 1 + (Array.isArray(comment.replies) ? comment.replies.length : 0),
+        (total, comment) =>
+          total +
+          1 +
+          (
+            Array.isArray(comment.replies)
+              ? comment.replies.length
+              : 0
+          ),
         0
       );
-    }
-
-    function createCommentId() {
-      return "comment_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
     }
 
     function jokeKey(joke) {
@@ -5472,43 +5564,42 @@
       return "joke_" + (hash >>> 0).toString(16);
     }
 
-    function saveReactionData() {
-      localStorage.setItem(
-        "realJokeStatsV1",
-        JSON.stringify(jokeStats)
-      );
-
-      localStorage.setItem(
-        "realUserVotesV1",
-        JSON.stringify(userVotes)
-      );
-    }
-
     function getJokeStats(joke) {
-      const key = jokeKey(joke);
-
-      if (!jokeStats[key]) {
-        jokeStats[key] = {
-          likes: 0,
-          dislikes: 0
-        };
-
-        saveReactionData();
-      }
-
-      return jokeStats[key];
+      return jokeStats[jokeKey(joke)] || {
+        likes: 0,
+        dislikes: 0
+      };
     }
 
     function getUserVote(joke) {
       return userVotes[jokeKey(joke)] || null;
     }
 
-    function registerVote(joke, reaction) {
+    function getJokeId(joke) {
+      return getSharedJokeRecord(joke)?.id || null;
+    }
+
+    function getJokeTextById(jokeId) {
+      return sharedJokes.find(
+        record => record.id === jokeId
+      )?.content || "";
+    }
+
+    async function registerVote(joke, reaction) {
+      if (!currentAuthUser) {
+        return {
+          accepted: false,
+          previousVote: null,
+          stats: getJokeStats(joke)
+        };
+      }
+
+      const jokeId = getJokeId(joke);
       const key = jokeKey(joke);
-      const previousVote = userVotes[key] || null;
+      const previousVote = getUserVote(joke);
       const stats = getJokeStats(joke);
 
-      if (previousVote) {
+      if (!jokeId || previousVote) {
         return {
           accepted: false,
           previousVote,
@@ -5516,31 +5607,62 @@
         };
       }
 
-      if (reaction === "like") {
-        stats.likes += 1;
-      } else {
-        stats.dislikes += 1;
-      }
-
       userVotes[key] = reaction;
-      saveReactionData();
 
-      return {
-        accepted: true,
-        previousVote: null,
-        stats
+      jokeStats[key] = {
+        likes:
+          stats.likes +
+          (reaction === "like" ? 1 : 0),
+        dislikes:
+          stats.dislikes +
+          (reaction === "dislike" ? 1 : 0)
       };
+
+      try {
+        const { error } = await supabaseClient
+          .from("joke_reactions")
+          .insert({
+            joke_id: jokeId,
+            user_id: currentAuthUser.id,
+            reaction
+          });
+
+        if (error) throw error;
+
+        return {
+          accepted: true,
+          previousVote: null,
+          stats: jokeStats[key]
+        };
+      } catch (error) {
+        delete userVotes[key];
+        jokeStats[key] = stats;
+        console.error("Reaction error:", error);
+
+        return {
+          accepted: false,
+          previousVote: null,
+          stats,
+          error
+        };
+      }
     }
 
     function getLikedVotesCount() {
-      return Object.values(userVotes).filter(
-        vote => vote === "like"
+      return reactionRows.filter(
+        row =>
+          row.user_id === currentAuthUser?.id &&
+          row.reaction === "like"
       ).length;
     }
 
-    jokes.forEach(joke => {
-      getJokeStats(joke);
-    });
+    function getUserLikedCount(userId) {
+      return reactionRows.filter(
+        row =>
+          row.user_id === userId &&
+          row.reaction === "like"
+      ).length;
+    }
 
     function normalizeSharedJokeRow(row) {
       const author = Array.isArray(row.author)
@@ -5634,6 +5756,509 @@
           localStorage.removeItem("activeMessengerContact");
         }
       }
+    }
+
+
+    function updateMessagesUnreadDot() {
+      const hasUnread = unreadMessagesCount > 0;
+
+      messagesUnreadDot.hidden = !hasUnread;
+      messagesUnreadDot.classList.toggle(
+        "visible",
+        hasUnread
+      );
+
+      document
+        .querySelector(".nav-messages-button")
+        ?.setAttribute(
+          "aria-label",
+          hasUnread
+            ? `Сообщения, непрочитанных: ${unreadMessagesCount}`
+            : "Сообщения"
+        );
+    }
+
+    async function loadReactionData() {
+      const { data, error } = await supabaseClient
+        .from("joke_reactions")
+        .select(`
+          joke_id,
+          user_id,
+          reaction,
+          created_at
+        `)
+        .limit(20000);
+
+      if (error) throw error;
+
+      reactionRows = data || [];
+      jokeStats = {};
+      userVotes = {};
+
+      const idToText = new Map(
+        sharedJokes.map(record => [
+          record.id,
+          record.content
+        ])
+      );
+
+      reactionRows.forEach(row => {
+        const joke = idToText.get(row.joke_id);
+        if (!joke) return;
+
+        const key = jokeKey(joke);
+
+        if (!jokeStats[key]) {
+          jokeStats[key] = {
+            likes: 0,
+            dislikes: 0
+          };
+        }
+
+        if (row.reaction === "like") {
+          jokeStats[key].likes += 1;
+        } else {
+          jokeStats[key].dislikes += 1;
+        }
+
+        if (row.user_id === currentAuthUser?.id) {
+          userVotes[key] = row.reaction;
+        }
+      });
+    }
+
+    async function loadCommentData() {
+      const [
+        commentsResponse,
+        likesResponse
+      ] = await Promise.all([
+        supabaseClient
+          .from("comments")
+          .select(`
+            id,
+            joke_id,
+            author_id,
+            parent_id,
+            content,
+            created_at,
+            author:profiles!comments_author_id_fkey (
+              id,
+              username,
+              display_name,
+              avatar_url
+            )
+          `)
+          .order("created_at", { ascending: true })
+          .limit(10000),
+
+        supabaseClient
+          .from("comment_likes")
+          .select(`
+            comment_id,
+            user_id,
+            created_at
+          `)
+          .limit(20000)
+      ]);
+
+      if (commentsResponse.error) {
+        throw commentsResponse.error;
+      }
+
+      if (likesResponse.error) {
+        throw likesResponse.error;
+      }
+
+      const comments = commentsResponse.data || [];
+      const likes = likesResponse.data || [];
+      const likeCounts = new Map();
+      const likedByMe = new Set();
+
+      likes.forEach(row => {
+        likeCounts.set(
+          row.comment_id,
+          (likeCounts.get(row.comment_id) || 0) + 1
+        );
+
+        if (row.user_id === currentAuthUser?.id) {
+          likedByMe.add(row.comment_id);
+        }
+      });
+
+      const idToComment = new Map();
+      const byJoke = new Map();
+
+      comments.forEach(row => {
+        const author = Array.isArray(row.author)
+          ? row.author[0]
+          : row.author;
+
+        const comment = {
+          id: row.id,
+          jokeId: row.joke_id,
+          parentId: row.parent_id,
+          authorId: row.author_id,
+          authorName:
+            author?.display_name || "Пользователь",
+          handle:
+            `@${author?.username || "user"}`,
+          text: row.content,
+          createdAt:
+            new Date(row.created_at).getTime(),
+          likes: likeCounts.get(row.id) || 0,
+          liked: likedByMe.has(row.id),
+          replies: []
+        };
+
+        idToComment.set(row.id, comment);
+
+        if (!byJoke.has(row.joke_id)) {
+          byJoke.set(row.joke_id, []);
+        }
+
+        byJoke.get(row.joke_id).push(comment);
+      });
+
+      jokeComments = {};
+
+      sharedJokes.forEach(record => {
+        const all = byJoke.get(record.id) || [];
+        const roots = all.filter(
+          comment => !comment.parentId
+        );
+
+        all
+          .filter(comment => comment.parentId)
+          .forEach(reply => {
+            const parent =
+              idToComment.get(reply.parentId);
+
+            if (!parent) return;
+
+            reply.replyTo = parent.handle;
+
+            const root = parent.parentId
+              ? idToComment.get(parent.parentId)
+              : parent;
+
+            if (root) {
+              root.replies.push(reply);
+            }
+          });
+
+        jokeComments[jokeKey(record.content)] = roots;
+      });
+    }
+
+    function getFollowCount(profileId) {
+      return followCounts.get(profileId) || {
+        followers: 0,
+        following: 0
+      };
+    }
+
+    async function loadFollowData() {
+      const { data, error } = await supabaseClient
+        .from("follows")
+        .select(`
+          follower_id,
+          following_id,
+          created_at
+        `)
+        .limit(20000);
+
+      if (error) throw error;
+
+      followRows = data || [];
+      followedProfileIds = new Set();
+      followCounts = new Map();
+
+      followRows.forEach(row => {
+        const followerCounts =
+          getFollowCount(row.follower_id);
+        const followingCounts =
+          getFollowCount(row.following_id);
+
+        followCounts.set(row.follower_id, {
+          ...followerCounts,
+          following:
+            followerCounts.following + 1
+        });
+
+        followCounts.set(row.following_id, {
+          ...followingCounts,
+          followers:
+            followingCounts.followers + 1
+        });
+
+        if (
+          row.follower_id === currentAuthUser?.id
+        ) {
+          followedProfileIds.add(
+            row.following_id
+          );
+        }
+      });
+    }
+
+    function normalizeMessageRow(row) {
+      const joke = Array.isArray(row.joke)
+        ? row.joke[0]
+        : row.joke;
+
+      const outgoing =
+        row.sender_id === currentAuthUser?.id;
+
+      return {
+        id: row.id,
+        senderId: row.sender_id,
+        receiverId: row.receiver_id,
+        type: row.joke_id ? "joke" : "text",
+        jokeId: row.joke_id,
+        direction:
+          outgoing ? "outgoing" : "incoming",
+        text:
+          row.body ||
+          joke?.content ||
+          "Анекдот удалён",
+        time: new Date(
+          row.created_at
+        ).toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        createdAt: row.created_at,
+        readAt: row.read_at
+      };
+    }
+
+    async function loadMessagesData() {
+      if (!currentAuthUser) return;
+
+      const { data, error } = await supabaseClient
+        .from("messages")
+        .select(`
+          id,
+          sender_id,
+          receiver_id,
+          body,
+          joke_id,
+          created_at,
+          read_at,
+          joke:jokes!messages_joke_id_fkey (
+            id,
+            content
+          )
+        `)
+        .or(
+          `sender_id.eq.${currentAuthUser.id},receiver_id.eq.${currentAuthUser.id}`
+        )
+        .order("created_at", { ascending: true })
+        .limit(10000);
+
+      if (error) throw error;
+
+      messengerStore = {};
+      unreadByContact = new Map();
+
+      (data || []).forEach(row => {
+        const otherId =
+          row.sender_id === currentAuthUser.id
+            ? row.receiver_id
+            : row.sender_id;
+
+        if (!Array.isArray(messengerStore[otherId])) {
+          messengerStore[otherId] = [];
+        }
+
+        messengerStore[otherId].push(
+          normalizeMessageRow(row)
+        );
+
+        if (
+          row.receiver_id === currentAuthUser.id &&
+          !row.read_at
+        ) {
+          unreadByContact.set(
+            otherId,
+            (unreadByContact.get(otherId) || 0) + 1
+          );
+        }
+      });
+
+      unreadMessagesCount = [
+        ...unreadByContact.values()
+      ].reduce(
+        (total, count) => total + count,
+        0
+      );
+
+      updateMessagesUnreadDot();
+    }
+
+    async function loadSocialData() {
+      await Promise.all([
+        loadReactionData(),
+        loadCommentData(),
+        loadFollowData(),
+        loadMessagesData()
+      ]);
+
+      renderCards();
+      renderProfile();
+      renderSearchResults(searchInput.value);
+      renderMessenger();
+
+      if (activePublicProfile) {
+        const profile =
+          getPublicProfile(
+            activePublicProfile.id
+          );
+
+        if (profile) {
+          renderPublicProfile(profile);
+        }
+      }
+    }
+
+    function subscribeToSocialRealtime() {
+      if (socialRealtimeChannel) {
+        supabaseClient.removeChannel(
+          socialRealtimeChannel
+        );
+      }
+
+      const reloadReactions = async () => {
+        try {
+          await loadReactionData();
+          renderCards();
+          renderProfile();
+
+          if (activePublicProfile) {
+            renderPublicProfile(
+              getPublicProfile(
+                activePublicProfile.id
+              )
+            );
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const reloadComments = async () => {
+        try {
+          await loadCommentData();
+          renderCards();
+          renderSearchResults(
+            searchInput.value
+          );
+
+          if (activeJokeInDialog) {
+            renderComments();
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const reloadFollows = async () => {
+        try {
+          await loadFollowData();
+          renderProfile();
+          renderSearchResults(
+            searchInput.value
+          );
+
+          if (activePublicProfile) {
+            const profile =
+              getPublicProfile(
+                activePublicProfile.id
+              );
+
+            if (profile) {
+              renderPublicProfile(profile);
+            }
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const reloadMessages = async payload => {
+        try {
+          await loadMessagesData();
+
+          const senderId =
+            payload?.new?.sender_id ||
+            payload?.old?.sender_id;
+
+          if (
+            currentPage === "messages" &&
+            activeContactId &&
+            senderId === activeContactId
+          ) {
+            await markConversationRead(
+              activeContactId
+            );
+          }
+
+          renderMessenger();
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      socialRealtimeChannel = supabaseClient
+        .channel(
+          `social-data-${currentAuthUser.id}`
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "joke_reactions"
+          },
+          reloadReactions
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "comments"
+          },
+          reloadComments
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "comment_likes"
+          },
+          reloadComments
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "follows"
+          },
+          reloadFollows
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "messages"
+          },
+          reloadMessages
+        )
+        .subscribe();
     }
 
     function refreshSharedJokeSurfaces() {
@@ -5779,7 +6404,9 @@
       await migrateLegacyLocalJokes();
       await loadDatabaseProfiles();
       await loadSharedJokes();
+      await loadSocialData();
       subscribeToSharedJokes();
+      subscribeToSocialRealtime();
     }
 
     async function publishSharedJoke(content) {
@@ -5836,6 +6463,7 @@
 
     const cardArea = document.getElementById("cardArea");
     const sharedFeedStatus = document.getElementById("sharedFeedStatus");
+    const messagesUnreadDot = document.getElementById("messagesUnreadDot");
 const pages = {
       home: document.getElementById("homePage"),
       compose: document.getElementById("composePage"),
@@ -6322,8 +6950,17 @@ const myJokes = document.getElementById("myJokes");
 
       try {
         if (sharedJokesChannel) {
-          await supabaseClient.removeChannel(sharedJokesChannel);
+          await supabaseClient.removeChannel(
+            sharedJokesChannel
+          );
           sharedJokesChannel = null;
+        }
+
+        if (socialRealtimeChannel) {
+          await supabaseClient.removeChannel(
+            socialRealtimeChannel
+          );
+          socialRealtimeChannel = null;
         }
 
         const { error } = await supabaseClient.auth.signOut();
@@ -6483,6 +7120,12 @@ function switchPage(pageName) {
 
       if (pageName === "messages") {
         renderMessenger();
+
+        if (activeContactId) {
+          markConversationRead(
+            activeContactId
+          );
+        }
       }
 
       if (pageName === "home") {
@@ -6791,36 +7434,34 @@ return;
       card.addEventListener("pointercancel", endSwipe);
     }
 
-    function finishSwipe(action, card) {
+    async function finishSwipe(action, card) {
       if (currentIndex >= jokes.length) return;
 
       const currentJoke = jokes[currentIndex];
-      const reaction = action === "like" ? "like" : "dislike";
-      const result = registerVote(currentJoke, reaction);
+      const reaction =
+        action === "like"
+          ? "like"
+          : "dislike";
+
+      const votePromise =
+        registerVote(
+          currentJoke,
+          reaction
+        );
 
       if (action === "like") {
-        card.style.transform = "translateX(-140%) rotate(-22deg)";
+        card.style.transform =
+          "translateX(-140%) rotate(-22deg)";
       } else {
-        card.style.transform = "translateX(140%) rotate(22deg)";
+        card.style.transform =
+          "translateX(140%) rotate(22deg)";
       }
 
       card.style.opacity = "0";
 
-      if (result.accepted) {
-        showToast(
-          reaction === "like"
-            ? "Лайк засчитан"
-            : "Дизлайк засчитан"
-        );
-      } else {
-        showToast(
-          result.previousVote === "like"
-            ? "Вы уже поставили этому анекдоту лайк"
-            : "Вы уже поставили этому анекдоту дизлайк"
-        );
-      }
+      await votePromise;
 
-      setTimeout(() => {
+      window.setTimeout(() => {
         currentIndex++;
         renderCards();
         renderProfile();
@@ -6967,40 +7608,91 @@ return;
       if (joke) openJokeInProfileDialog(joke);
     });
 
-    const profileSocialStats = JSON.parse(
-      localStorage.getItem("profileSocialStatsV1") ||
-      '{"followers":0,"following":0}'
-    );
-
-    let followedProfileIds = new Set(
-      JSON.parse(localStorage.getItem("followedProfilesV1") || "[]")
-    );
-
-    function saveFollowedProfiles() {
-      localStorage.setItem("followedProfilesV1", JSON.stringify([...followedProfileIds]));
-    }
-
     function isFollowingProfile(profileId) {
       return followedProfileIds.has(profileId);
     }
 
-    function toggleProfileFollow(profileId) {
-      if (followedProfileIds.has(profileId)) followedProfileIds.delete(profileId);
-      else followedProfileIds.add(profileId);
+    async function toggleProfileFollow(profileId) {
+      if (
+        !currentAuthUser ||
+        !profileId ||
+        profileId === currentAuthUser.id
+      ) {
+        return;
+      }
 
-      saveFollowedProfiles();
-      renderProfile();
-      if (activePublicProfile?.id === profileId) renderPublicProfile(activePublicProfile);
-      renderSearchResults(searchInput.value);
+      const following =
+        isFollowingProfile(profileId);
+
+      publicFollowButton.disabled = true;
+
+      try {
+        if (following) {
+          const { error } = await supabaseClient
+            .from("follows")
+            .delete()
+            .eq(
+              "follower_id",
+              currentAuthUser.id
+            )
+            .eq(
+              "following_id",
+              profileId
+            );
+
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient
+            .from("follows")
+            .insert({
+              follower_id:
+                currentAuthUser.id,
+              following_id: profileId
+            });
+
+          if (error) throw error;
+        }
+
+        await loadFollowData();
+        renderProfile();
+        renderSearchResults(
+          searchInput.value
+        );
+
+        if (
+          activePublicProfile?.id ===
+          profileId
+        ) {
+          const profile =
+            getPublicProfile(profileId);
+
+          if (profile) {
+            renderPublicProfile(profile);
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Follow error:",
+          error
+        );
+      } finally {
+        publicFollowButton.disabled = false;
+      }
     }
 
     function renderProfile() {
       const ownJokes = getOwnJokeTexts();
       myPostsCount.textContent = ownJokes.length;
       likedCount.textContent = getLikedVotesCount();
+      const ownFollowCounts =
+        getFollowCount(
+          currentAuthUser?.id
+        );
+
       followersCount.textContent =
-        Number(profileSocialStats.followers) || 0;
-      followingCount.textContent = followedProfileIds.size;
+        ownFollowCounts.followers;
+      followingCount.textContent =
+        ownFollowCounts.following;
 if (!ownJokes.length) {
         myJokes.innerHTML = `
           <div class="empty-small">
@@ -7067,7 +7759,7 @@ if (!ownJokes.length) {
         return `
           <article class="comment-item" data-comment-id="${comment.id}">
             <div class="comment-main">
-              <span class="comment-avatar">Я</span>
+              <span class="comment-avatar">${escapeHtml(getInitial(comment.authorName))}</span>
               <div class="comment-content">
                 <div class="comment-author-row"><div><strong>${escapeHtml(comment.authorName)}</strong><span>${escapeHtml(comment.handle)}</span></div><time>${formatCommentTime(comment.createdAt)}</time></div>
                 <p>${escapeHtml(comment.text)}</p>
@@ -7079,7 +7771,7 @@ if (!ownJokes.length) {
             </div>
             ${replies.length ? `<div class="comment-replies">${replies.map(reply => `
               <article class="comment-reply" data-parent-comment-id="${comment.id}" data-reply-id="${reply.id}">
-                <span class="comment-avatar comment-avatar-small">Я</span>
+                <span class="comment-avatar comment-avatar-small">${escapeHtml(getInitial(reply.authorName))}</span>
                 <div class="comment-content">
                   <div class="comment-author-row"><div><strong>${escapeHtml(reply.authorName)}</strong><span>${escapeHtml(reply.handle)}</span></div><time>${formatCommentTime(reply.createdAt)}</time></div>
                   <p><span class="reply-mention">${escapeHtml(reply.replyTo)}</span> ${escapeHtml(reply.text)}</p>
@@ -7147,70 +7839,161 @@ if (!ownJokes.length) {
 
     cancelReplyButton.addEventListener("click", clearReplyMode);
 
-    commentForm.addEventListener("submit", event => {
+    commentForm.addEventListener("submit", async event => {
       event.preventDefault();
+
       const text = commentInput.value.trim();
-      if (!text || !activeJokeInDialog) return;
-      const comments = getComments(activeJokeInDialog);
+      const jokeId =
+        getJokeId(activeJokeInDialog);
 
-      if (replyingToCommentId) {
-        const parentComment = comments.find(comment => comment.id === replyingToCommentId);
-        if (parentComment) {
-          if (!Array.isArray(parentComment.replies)) parentComment.replies = [];
-          parentComment.replies.push({
-            id: createCommentId(), authorName: "Я", handle: "@me",
-            replyTo: replyingText.textContent.replace("Ответ для ", "") || "@user",
-            text, createdAt: Date.now(), likes: 0, liked: false
-          });
-        }
-      } else {
-        comments.push({
-          id: createCommentId(), authorName: "Я", handle: "@me", text,
-          createdAt: Date.now(), likes: 0, liked: false, replies: []
-        });
-      }
-
-      saveComments();
-      commentForm.reset();
-      commentSubmitButton.disabled = true;
-      clearReplyMode();
-      refreshCommentSurfaces();
-    });
-
-    commentsList.addEventListener("click", event => {
-      const likeButton = event.target.closest("[data-comment-like]");
-      const replyLikeButton = event.target.closest("[data-reply-like]");
-      const replyButton = event.target.closest("[data-comment-reply]");
-      if (!activeJokeInDialog) return;
-      const comments = getComments(activeJokeInDialog);
-
-      if (likeButton) {
-        const comment = comments.find(item => item.id === likeButton.dataset.commentLike);
-        if (comment) {
-          comment.liked = !comment.liked;
-          comment.likes = Math.max(0, (comment.likes || 0) + (comment.liked ? 1 : -1));
-          saveComments(); renderComments();
-        }
+      if (
+        !text ||
+        !jokeId ||
+        !currentAuthUser
+      ) {
         return;
       }
 
-      if (replyLikeButton) {
-        const parent = comments.find(item => item.id === replyLikeButton.dataset.parentCommentId);
-        const reply = parent?.replies?.find(item => item.id === replyLikeButton.dataset.replyLike);
-        if (reply) {
-          reply.liked = !reply.liked;
-          reply.likes = Math.max(0, (reply.likes || 0) + (reply.liked ? 1 : -1));
-          saveComments(); renderComments();
+      commentSubmitButton.disabled = true;
+      commentSubmitButton.textContent =
+        "Отправляем…";
+
+      try {
+        const { error } = await supabaseClient
+          .from("comments")
+          .insert({
+            joke_id: jokeId,
+            author_id:
+              currentAuthUser.id,
+            parent_id:
+              replyingToCommentId ||
+              null,
+            content: text
+          });
+
+        if (error) throw error;
+
+        commentForm.reset();
+        clearReplyMode();
+        await loadCommentData();
+        refreshCommentSurfaces();
+      } catch (error) {
+        console.error(
+          "Comment error:",
+          error
+        );
+      } finally {
+        commentSubmitButton.textContent =
+          "Отправить";
+        commentSubmitButton.disabled =
+          commentInput.value.trim()
+            .length === 0;
+      }
+    });
+
+    commentsList.addEventListener("click", async event => {
+      const likeButton =
+        event.target.closest(
+          "[data-comment-like]"
+        );
+
+      const replyLikeButton =
+        event.target.closest(
+          "[data-reply-like]"
+        );
+
+      const replyButton =
+        event.target.closest(
+          "[data-comment-reply]"
+        );
+
+      if (!activeJokeInDialog) return;
+
+      if (likeButton || replyLikeButton) {
+        const button =
+          likeButton || replyLikeButton;
+
+        const commentId =
+          likeButton
+            ? likeButton.dataset.commentLike
+            : replyLikeButton.dataset.replyLike;
+
+        const comments =
+          getComments(
+            activeJokeInDialog
+          );
+
+        const allComments =
+          comments.flatMap(comment => [
+            comment,
+            ...(comment.replies || [])
+          ]);
+
+        const comment =
+          allComments.find(
+            item => item.id === commentId
+          );
+
+        if (!comment) return;
+
+        button.disabled = true;
+
+        try {
+          if (comment.liked) {
+            const { error } =
+              await supabaseClient
+                .from("comment_likes")
+                .delete()
+                .eq(
+                  "comment_id",
+                  commentId
+                )
+                .eq(
+                  "user_id",
+                  currentAuthUser.id
+                );
+
+            if (error) throw error;
+          } else {
+            const { error } =
+              await supabaseClient
+                .from("comment_likes")
+                .insert({
+                  comment_id: commentId,
+                  user_id:
+                    currentAuthUser.id
+                });
+
+            if (error) throw error;
+          }
+
+          await loadCommentData();
+          renderComments();
+        } catch (error) {
+          console.error(
+            "Comment like error:",
+            error
+          );
+        } finally {
+          button.disabled = false;
         }
+
         return;
       }
 
       if (replyButton) {
-        replyingToCommentId = replyButton.dataset.commentReply;
-        const author = replyButton.dataset.commentAuthor || "@user";
+        replyingToCommentId =
+          replyButton.dataset.commentReply;
+
+        const author =
+          replyButton.dataset.commentAuthor ||
+          "@user";
+
         replyingIndicator.hidden = false;
-        replyingText.textContent = `Ответ для ${author}`;
-        commentInput.placeholder = `Ответ для ${author}...`;
+        replyingText.textContent =
+          `Ответ для ${author}`;
+        commentInput.placeholder =
+          `Ответ для ${author}...`;
         commentInput.focus();
       }
     });
@@ -7278,9 +8061,12 @@ if (!ownJokes.length) {
         bio:
           profile.bio ||
           "Публикует анекдоты в общей ленте.",
-        followers: 0,
-        following: 0,
-        liked: 0,
+        followers:
+          getFollowCount(profileId).followers,
+        following:
+          getFollowCount(profileId).following,
+        liked:
+          getUserLikedCount(profileId),
         posts
       };
     }
@@ -7301,7 +8087,7 @@ if (!ownJokes.length) {
       const following = isFollowingProfile(profile.id);
       publicPostsCount.textContent = profile.posts.length;
       publicLikedCount.textContent = profile.liked;
-      publicFollowersCount.textContent = profile.followers + (following ? 1 : 0);
+      publicFollowersCount.textContent = profile.followers;
       publicFollowingCount.textContent = profile.following;
       publicFollowButton.textContent = following ? "Вы подписаны" : "Подписаться";
       publicFollowButton.classList.toggle("following", following);
@@ -7409,9 +8195,7 @@ if (!ownJokes.length) {
       localStorage.getItem("activeMessengerContact") ||
       null;
 
-    let messengerStore = JSON.parse(
-      localStorage.getItem("messengerStoreV1") || "{}"
-    );
+    let messengerStore = {};
 
     let activeMessageMode = "text";
 
@@ -7434,10 +8218,86 @@ if (!ownJokes.length) {
     }
 
     function saveMessengerStore() {
-      localStorage.setItem(
-        "messengerStoreV1",
-        JSON.stringify(messengerStore)
-      );
+      // Сообщения сохраняются в Supabase.
+    }
+
+    async function sendMessageTo(
+      receiverId,
+      options = {}
+    ) {
+      if (
+        !currentAuthUser ||
+        !receiverId ||
+        receiverId === currentAuthUser.id
+      ) {
+        return false;
+      }
+
+      const body =
+        String(options.body || "")
+          .trim();
+
+      const jokeId =
+        options.jokeId || null;
+
+      if (!body && !jokeId) {
+        return false;
+      }
+
+      const { error } = await supabaseClient
+        .from("messages")
+        .insert({
+          sender_id:
+            currentAuthUser.id,
+          receiver_id: receiverId,
+          body: body || null,
+          joke_id: jokeId
+        });
+
+      if (error) throw error;
+
+      await loadMessagesData();
+      return true;
+    }
+
+    async function markConversationRead(
+      contactId
+    ) {
+      if (
+        !currentAuthUser ||
+        !contactId ||
+        !(unreadByContact.get(contactId) > 0)
+      ) {
+        return;
+      }
+
+      const { error } = await supabaseClient
+        .from("messages")
+        .update({
+          read_at:
+            new Date().toISOString()
+        })
+        .eq(
+          "receiver_id",
+          currentAuthUser.id
+        )
+        .eq(
+          "sender_id",
+          contactId
+        )
+        .is("read_at", null);
+
+      if (error) {
+        console.error(
+          "Read receipt error:",
+          error
+        );
+        return;
+      }
+
+      await loadMessagesData();
+      renderContacts();
+      renderChat();
     }
 
     function renderFeedShareContacts(query = "") {
@@ -7534,28 +8394,52 @@ if (!ownJokes.length) {
       }
     });
 
-    feedShareContacts.addEventListener("click", event => {
-      const contactButton = event.target.closest("[data-feed-contact-id]");
-      if (!contactButton || !feedShareSelectedJoke) return;
+    feedShareContacts.addEventListener("click", async event => {
+      const contactButton =
+        event.target.closest(
+          "[data-feed-contact-id]"
+        );
 
-      const contactId = contactButton.dataset.feedContactId;
-      const conversation = ensureConversation(contactId);
+      if (
+        !contactButton ||
+        !feedShareSelectedJoke
+      ) {
+        return;
+      }
 
-      conversation.push({
-        type: "joke",
-        direction: "outgoing",
-        text: feedShareSelectedJoke,
-        time: currentMessageTime()
-      });
+      const contactId =
+        contactButton.dataset.feedContactId;
 
-      saveMessengerStore();
+      const jokeId =
+        getJokeId(feedShareSelectedJoke);
 
-      contactButton.classList.add("sent");
-      contactButton.querySelector(".feed-share-send-icon").innerHTML = "✓";
+      if (!jokeId) return;
 
-      window.setTimeout(() => {
-        closeFeedShareDialog();
-      }, 450);
+      contactButton.disabled = true;
+
+      try {
+        await sendMessageTo(
+          contactId,
+          { jokeId }
+        );
+
+        contactButton.classList.add(
+          "sent"
+        );
+
+        contactButton
+          .querySelector(
+            ".feed-share-send-icon"
+          )
+          .textContent = "✓";
+
+        window.setTimeout(() => {
+          closeFeedShareDialog();
+        }, 450);
+      } catch (error) {
+        console.error(error);
+        contactButton.disabled = false;
+      }
     });
 
     function getActiveContact() {
@@ -7582,6 +8466,11 @@ if (!ownJokes.length) {
         >
           <span class="contact-mini-avatar">${contact.initial}</span>
           <span>${escapeHtml(contact.name)}</span>
+          ${
+            unreadByContact.get(contact.id)
+              ? `<span class="contact-unread-dot"></span>`
+              : ""
+          }
         </button>
       `).join("");
     }
@@ -7740,6 +8629,9 @@ shareJokeButton.disabled = true;
       );
 
       renderMessenger();
+      markConversationRead(
+        activeContactId
+      );
     });
 
     chatAvatar.addEventListener("click", () => {
@@ -7757,25 +8649,39 @@ shareJokeButton.disabled = true;
         messageText.value.trim().length === 0;
     });
 
-    messageForm.addEventListener("submit", event => {
+    messageForm.addEventListener("submit", async event => {
       event.preventDefault();
 
-      const text = messageText.value.trim();
-      if (!text || !activeContactId) return;
+      const text =
+        messageText.value.trim();
 
-      const conversation = ensureConversation(activeContactId);
+      if (
+        !text ||
+        !activeContactId
+      ) {
+        return;
+      }
 
-      conversation.push({
-        type: "text",
-        direction: "outgoing",
-        text,
-        time: currentMessageTime()
-      });
-
-      saveMessengerStore();
-      messageForm.reset();
       sendMessageButton.disabled = true;
-      renderChat();
+
+      try {
+        await sendMessageTo(
+          activeContactId,
+          { body: text }
+        );
+
+        messageForm.reset();
+        renderChat();
+      } catch (error) {
+        console.error(
+          "Message error:",
+          error
+        );
+      } finally {
+        sendMessageButton.disabled =
+          messageText.value.trim()
+            .length === 0;
+      }
     });
 
     jokeCapsulesStrip.addEventListener("click", event => {
@@ -7786,25 +8692,44 @@ shareJokeButton.disabled = true;
       renderJokeShareOptions();
     });
 
-    jokeShareForm.addEventListener("submit", event => {
+    jokeShareForm.addEventListener("submit", async event => {
       event.preventDefault();
 
-      const ownJokes = getShareableJokes();
-      const selectedJoke = ownJokes[selectedOwnJokeIndex];
+      const ownRecords =
+        getOwnJokeRecords();
 
-      if (!selectedJoke || !activeContactId) return;
+      const selectedRecord =
+        ownRecords[
+          selectedOwnJokeIndex
+        ];
 
-      const conversation = ensureConversation(activeContactId);
+      if (
+        !selectedRecord ||
+        !activeContactId
+      ) {
+        return;
+      }
 
-      conversation.push({
-        type: "joke",
-        direction: "outgoing",
-        text: selectedJoke,
-        time: currentMessageTime()
-      });
+      shareJokeButton.disabled = true;
 
-      saveMessengerStore();
-      renderChat();
+      try {
+        await sendMessageTo(
+          activeContactId,
+          {
+            jokeId:
+              selectedRecord.id
+          }
+        );
+
+        renderChat();
+      } catch (error) {
+        console.error(
+          "Joke message error:",
+          error
+        );
+      } finally {
+        shareJokeButton.disabled = false;
+      }
     });
 
     function escapeHtml(text) {
