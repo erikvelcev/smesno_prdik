@@ -1,0 +1,1577 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
+  <meta name="color-scheme" content="dark">
+  <title>Смешно — админ-панель</title>
+
+  <style>
+    :root {
+      --bg: #0d0b13;
+      --surface: rgba(27, 23, 38, .88);
+      --surface-2: rgba(39, 33, 53, .92);
+      --border: rgba(255, 255, 255, .08);
+      --text: #f7f4ff;
+      --muted: #aaa1bd;
+      --primary: #9671ff;
+      --primary-2: #c270ff;
+      --danger: #ff6f91;
+      --success: #5bd7a6;
+      --warning: #ffbe68;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .34);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(122, 81, 255, .18), transparent 30%),
+        radial-gradient(circle at 90% 18%, rgba(255, 92, 172, .10), transparent 26%),
+        linear-gradient(180deg, #100d18 0%, #0b0910 100%);
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .shell {
+      width: min(1220px, calc(100% - 28px));
+      margin: 0 auto;
+      padding:
+        max(22px, env(safe-area-inset-top))
+        0
+        max(42px, env(safe-area-inset-bottom));
+    }
+
+    .glass {
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(38, 32, 50, .94),
+          rgba(21, 18, 29, .94)
+        );
+      box-shadow:
+        var(--shadow),
+        inset 0 1px 0 rgba(255, 255, 255, .04);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .topbar {
+      min-height: 78px;
+      padding: 16px 18px;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      border-radius: 17px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow:
+        0 12px 28px rgba(126, 88, 255, .28),
+        inset 0 1px 0 rgba(255, 255, 255, .24);
+      font-size: 23px;
+    }
+
+    .brand strong,
+    .brand span {
+      display: block;
+    }
+
+    .brand strong {
+      font-size: 18px;
+      letter-spacing: -.02em;
+    }
+
+    .brand span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .icon-button,
+    .secondary-button,
+    .primary-button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 14px;
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .icon-button {
+      width: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .045);
+    }
+
+    .secondary-button {
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .045);
+    }
+
+    .primary-button {
+      padding: 0 18px;
+      color: white;
+      background:
+        linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 11px 25px rgba(126, 88, 255, .24);
+    }
+
+    .icon-button:hover,
+    .secondary-button:hover,
+    .primary-button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .login-wrap {
+      min-height: calc(100vh - 150px);
+      display: grid;
+      place-items: center;
+      padding: 36px 0;
+    }
+
+    .login-card {
+      width: min(440px, 100%);
+      padding: 28px;
+      border-radius: 28px;
+    }
+
+    .login-icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 20px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, rgba(150, 113, 255, .28), rgba(194, 112, 255, .18));
+      border: 1px solid rgba(180, 153, 255, .20);
+      font-size: 30px;
+    }
+
+    .login-card h1 {
+      margin: 0;
+      font-size: clamp(28px, 6vw, 40px);
+      letter-spacing: -.04em;
+    }
+
+    .login-card > p {
+      margin: 10px 0 24px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 13px;
+    }
+
+    .field span {
+      color: #d9d1ea;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .field input,
+    .search-input {
+      width: 100%;
+      min-height: 49px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      color: var(--text);
+      background: rgba(9, 8, 13, .62);
+      outline: none;
+    }
+
+    .field input:focus,
+    .search-input:focus {
+      border-color: rgba(150, 113, 255, .55);
+      box-shadow: 0 0 0 3px rgba(150, 113, 255, .12);
+    }
+
+    .login-submit {
+      width: 100%;
+      min-height: 50px;
+      margin-top: 7px;
+    }
+
+    .status {
+      min-height: 20px;
+      margin-top: 14px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .status[data-type="error"] {
+      color: #ff9db4;
+    }
+
+    .status[data-type="success"] {
+      color: var(--success);
+    }
+
+    .access-denied {
+      width: min(500px, 100%);
+      padding: 30px;
+      border-radius: 28px;
+      text-align: center;
+    }
+
+    .access-denied .big {
+      font-size: 48px;
+    }
+
+    .access-denied h2 {
+      margin: 10px 0 6px;
+      font-size: 26px;
+    }
+
+    .access-denied p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .dashboard {
+      padding-top: 18px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 11px;
+    }
+
+    .stat-card {
+      min-height: 116px;
+      padding: 16px;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      width: 72px;
+      height: 72px;
+      right: -24px;
+      bottom: -26px;
+      border-radius: 50%;
+      background: rgba(150, 113, 255, .12);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .stat-value {
+      display: block;
+      margin-top: 13px;
+      font-size: clamp(25px, 4vw, 38px);
+      line-height: 1;
+      letter-spacing: -.04em;
+    }
+
+    .stat-note {
+      display: block;
+      margin-top: 8px;
+      color: #c8bfd9;
+      font-size: 9px;
+    }
+
+    .users-panel {
+      margin-top: 14px;
+      padding: 18px;
+      border-radius: 25px;
+    }
+
+    .users-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .users-header h2 {
+      margin: 0;
+      font-size: 23px;
+      letter-spacing: -.03em;
+    }
+
+    .users-header p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .search-wrap {
+      width: min(390px, 100%);
+      position: relative;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      top: 50%;
+      left: 14px;
+      width: 18px;
+      height: 18px;
+      transform: translateY(-50%);
+      fill: none;
+      stroke: var(--muted);
+      stroke-width: 2;
+      pointer-events: none;
+    }
+
+    .search-input {
+      padding-left: 42px;
+    }
+
+    .table-wrap {
+      margin-top: 16px;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 19px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, .055);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      color: var(--muted);
+      background: rgba(255, 255, 255, .025);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    td {
+      color: #e7e0f2;
+      font-size: 11px;
+    }
+
+    tbody tr {
+      transition: background .16s ease;
+    }
+
+    tbody tr:hover {
+      background: rgba(150, 113, 255, .055);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .user-cell {
+      min-width: 215px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: white;
+      background:
+        linear-gradient(135deg, var(--primary), #ef68ad);
+      background-position: center;
+      background-size: cover;
+      font-size: 13px;
+      font-weight: 950;
+      box-shadow: 0 7px 16px rgba(0, 0, 0, .24);
+    }
+
+    .user-main {
+      min-width: 0;
+    }
+
+    .user-main strong,
+    .user-main span {
+      display: block;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-main strong {
+      font-size: 12px;
+    }
+
+    .user-main span {
+      margin-top: 3px;
+      color: var(--primary-2);
+      font-size: 9px;
+      font-weight: 750;
+    }
+
+    .email-cell {
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pill {
+      width: fit-content;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 8px;
+      font-weight: 900;
+    }
+
+    .pill.confirmed {
+      color: #8cecc4;
+      background: rgba(91, 215, 166, .10);
+    }
+
+    .pill.pending {
+      color: #ffd08d;
+      background: rgba(255, 190, 104, .10);
+    }
+
+    .number-cell {
+      font-weight: 900;
+      color: #d8cdf5;
+      text-align: center;
+    }
+
+    .row-button {
+      min-height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      color: #d9cdfc;
+      background: rgba(150, 113, 255, .08);
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .empty-state,
+    .loading-state {
+      padding: 45px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    .pagination {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .pagination-info {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .pagination-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .pagination button:disabled {
+      opacity: .36;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    dialog {
+      width: min(560px, calc(100% - 24px));
+      max-height: 88vh;
+      padding: 0;
+      border: 0;
+      border-radius: 27px;
+      color: var(--text);
+      background: transparent;
+    }
+
+    dialog::backdrop {
+      background: rgba(4, 3, 7, .72);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal {
+      max-height: 86vh;
+      padding: 22px;
+      border-radius: 27px;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .close-button {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--text);
+      background: rgba(255, 255, 255, .05);
+      font-size: 18px;
+    }
+
+    .profile-hero {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .profile-hero .avatar {
+      width: 66px;
+      height: 66px;
+      flex-basis: 66px;
+      font-size: 20px;
+    }
+
+    .profile-hero strong,
+    .profile-hero span {
+      display: block;
+    }
+
+    .profile-hero strong {
+      font-size: 20px;
+    }
+
+    .profile-hero span {
+      margin-top: 4px;
+      color: var(--primary-2);
+      font-size: 11px;
+    }
+
+    .details-grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .detail {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, .025);
+    }
+
+    .detail.full {
+      grid-column: 1 / -1;
+    }
+
+    .detail span,
+    .detail strong {
+      display: block;
+    }
+
+    .detail span {
+      color: var(--muted);
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .detail strong {
+      margin-top: 6px;
+      overflow-wrap: anywhere;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .copy-button {
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 920px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .stat-card:last-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .shell {
+        width: min(100% - 18px, 1220px);
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .brand span {
+        display: none;
+      }
+
+      .top-actions .secondary-button {
+        width: 42px;
+        padding: 0;
+        font-size: 0;
+      }
+
+      .top-actions .secondary-button::before {
+        content: "↪";
+        font-size: 18px;
+      }
+
+      .users-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .search-wrap {
+        width: 100%;
+      }
+
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .detail.full {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-card:last-child {
+        grid-column: auto;
+      }
+
+      .login-card {
+        padding: 22px;
+      }
+
+      .users-panel {
+        padding: 13px;
+      }
+
+      .pagination {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .pagination-actions {
+        width: 100%;
+      }
+
+      .pagination-actions button {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="shell">
+    <header class="topbar glass">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">🛡️</div>
+
+        <div>
+          <strong>Смешно Admin</strong>
+          <span>Пользователи и статистика проекта</span>
+        </div>
+      </div>
+
+      <div id="topActions" class="top-actions" hidden>
+        <button
+          id="refreshButton"
+          class="icon-button"
+          type="button"
+          title="Обновить данные"
+          aria-label="Обновить данные"
+        >↻</button>
+
+        <button
+          id="signOutButton"
+          class="secondary-button"
+          type="button"
+        >Выйти</button>
+      </div>
+    </header>
+
+    <section id="loginSection" class="login-wrap">
+      <form id="loginForm" class="login-card glass">
+        <div class="login-icon" aria-hidden="true">🔐</div>
+
+        <h1>Вход администратора</h1>
+
+        <p>
+          Используй тот же email и пароль, что и в основном
+          приложении «Смешно».
+        </p>
+
+        <label class="field">
+          <span>Email</span>
+          <input
+            id="emailInput"
+            type="email"
+            autocomplete="email"
+            required
+          >
+        </label>
+
+        <label class="field">
+          <span>Пароль</span>
+          <input
+            id="passwordInput"
+            type="password"
+            autocomplete="current-password"
+            minlength="6"
+            required
+          >
+        </label>
+
+        <button
+          id="loginButton"
+          class="primary-button login-submit"
+          type="submit"
+        >Войти в панель</button>
+
+        <div
+          id="loginStatus"
+          class="status"
+          aria-live="polite"
+        ></div>
+      </form>
+    </section>
+
+    <section id="deniedSection" class="login-wrap" hidden>
+      <div class="access-denied glass">
+        <div class="big" aria-hidden="true">⛔</div>
+        <h2>Нет доступа</h2>
+        <p>
+          Этот аккаунт существует, но не добавлен в список
+          администраторов.
+        </p>
+
+        <button
+          id="deniedSignOutButton"
+          class="secondary-button"
+          type="button"
+        >Войти другим аккаунтом</button>
+      </div>
+    </section>
+
+    <section id="dashboardSection" class="dashboard" hidden>
+      <div class="stats-grid">
+        <article class="stat-card glass">
+          <span class="stat-label">Регистрации</span>
+          <strong id="registeredUsersStat" class="stat-value">—</strong>
+          <span class="stat-note">Все аккаунты</span>
+        </article>
+
+        <article class="stat-card glass">
+          <span class="stat-label">Подтверждены</span>
+          <strong id="confirmedUsersStat" class="stat-value">—</strong>
+          <span class="stat-note">Email подтверждён</span>
+        </article>
+
+        <article class="stat-card glass">
+          <span class="stat-label">Новые за 24 часа</span>
+          <strong id="newUsersStat" class="stat-value">—</strong>
+          <span class="stat-note">Последние регистрации</span>
+        </article>
+
+        <article class="stat-card glass">
+          <span class="stat-label">Анекдоты</span>
+          <strong id="jokesStat" class="stat-value">—</strong>
+          <span class="stat-note">Всего публикаций</span>
+        </article>
+
+        <article class="stat-card glass">
+          <span class="stat-label">Комментарии</span>
+          <strong id="commentsStat" class="stat-value">—</strong>
+          <span class="stat-note">Обсуждения пользователей</span>
+        </article>
+      </div>
+
+      <section class="users-panel glass">
+        <div class="users-header">
+          <div>
+            <h2>Зарегистрированные пользователи</h2>
+            <p id="usersSubtitle">Загрузка списка…</p>
+          </div>
+
+          <label class="search-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-3.8-3.8"></path>
+            </svg>
+
+            <input
+              id="searchInput"
+              class="search-input"
+              type="search"
+              placeholder="Имя, @тег или email"
+              autocomplete="off"
+            >
+          </label>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Пользователь</th>
+                <th>Email</th>
+                <th>Статус</th>
+                <th>Регистрация</th>
+                <th>Последний вход</th>
+                <th>Анекдоты</th>
+                <th>Комментарии</th>
+                <th>Подписчики</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="9" class="loading-state">
+                  Загружаем пользователей…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <div id="paginationInfo" class="pagination-info">
+            —
+          </div>
+
+          <div class="pagination-actions">
+            <button
+              id="previousButton"
+              class="secondary-button"
+              type="button"
+              disabled
+            >Назад</button>
+
+            <button
+              id="nextButton"
+              class="secondary-button"
+              type="button"
+              disabled
+            >Дальше</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="userDialog">
+    <div class="modal glass">
+      <div class="modal-header">
+        <h3>Карточка пользователя</h3>
+
+        <button
+          id="closeDialogButton"
+          class="close-button"
+          type="button"
+          aria-label="Закрыть"
+        >×</button>
+      </div>
+
+      <div id="userDialogBody"></div>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = 'https://cdxjkmxjlgwuetshwtzz.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_z5bQm5Yeb3xKbeDMltWjCw_t2aHnVYT';
+
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      }
+    );
+
+    const PAGE_SIZE = 50;
+
+    const loginSection = document.getElementById("loginSection");
+    const deniedSection = document.getElementById("deniedSection");
+    const dashboardSection = document.getElementById("dashboardSection");
+    const topActions = document.getElementById("topActions");
+
+    const loginForm = document.getElementById("loginForm");
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const loginButton = document.getElementById("loginButton");
+    const loginStatus = document.getElementById("loginStatus");
+
+    const refreshButton = document.getElementById("refreshButton");
+    const signOutButton = document.getElementById("signOutButton");
+    const deniedSignOutButton =
+      document.getElementById("deniedSignOutButton");
+
+    const registeredUsersStat =
+      document.getElementById("registeredUsersStat");
+    const confirmedUsersStat =
+      document.getElementById("confirmedUsersStat");
+    const newUsersStat =
+      document.getElementById("newUsersStat");
+    const jokesStat =
+      document.getElementById("jokesStat");
+    const commentsStat =
+      document.getElementById("commentsStat");
+
+    const usersSubtitle =
+      document.getElementById("usersSubtitle");
+    const searchInput =
+      document.getElementById("searchInput");
+    const usersTableBody =
+      document.getElementById("usersTableBody");
+    const paginationInfo =
+      document.getElementById("paginationInfo");
+    const previousButton =
+      document.getElementById("previousButton");
+    const nextButton =
+      document.getElementById("nextButton");
+
+    const userDialog =
+      document.getElementById("userDialog");
+    const userDialogBody =
+      document.getElementById("userDialogBody");
+    const closeDialogButton =
+      document.getElementById("closeDialogButton");
+
+    let currentUsers = [];
+    let currentOffset = 0;
+    let currentTotal = 0;
+    let currentSearch = "";
+    let searchTimer = null;
+    let loading = false;
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function safeAvatarUrl(value) {
+      const url = String(value || "").trim();
+      return /^https:\/\//i.test(url) ? url : "";
+    }
+
+    function getInitial(value) {
+      const clean = String(value || "U").trim();
+      return clean.charAt(0).toUpperCase() || "U";
+    }
+
+    function formatDate(value, includeTime = true) {
+      if (!value) return "—";
+
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return "—";
+      }
+
+      return date.toLocaleString(
+        "ru-RU",
+        includeTime
+          ? {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            }
+          : {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric"
+            }
+      );
+    }
+
+    function setLoginStatus(message = "", type = "") {
+      loginStatus.textContent = message;
+      loginStatus.dataset.type = type;
+    }
+
+    function showScreen(name) {
+      loginSection.hidden = name !== "login";
+      deniedSection.hidden = name !== "denied";
+      dashboardSection.hidden = name !== "dashboard";
+      topActions.hidden = name !== "dashboard";
+    }
+
+    async function verifyAdmin() {
+      const { data, error } = await supabaseClient.rpc(
+        "smesno_is_admin"
+      );
+
+      if (error) throw error;
+
+      return data === true;
+    }
+
+    async function loadStats() {
+      const { data, error } = await supabaseClient.rpc(
+        "smesno_admin_dashboard_stats"
+      );
+
+      if (error) throw error;
+
+      registeredUsersStat.textContent =
+        Number(data?.registered_users || 0)
+          .toLocaleString("ru-RU");
+
+      confirmedUsersStat.textContent =
+        Number(data?.confirmed_users || 0)
+          .toLocaleString("ru-RU");
+
+      newUsersStat.textContent =
+        Number(data?.new_users_24h || 0)
+          .toLocaleString("ru-RU");
+
+      jokesStat.textContent =
+        Number(data?.jokes_count || 0)
+          .toLocaleString("ru-RU");
+
+      commentsStat.textContent =
+        Number(data?.comments_count || 0)
+          .toLocaleString("ru-RU");
+    }
+
+    function avatarMarkup(user, large = false) {
+      const avatarUrl = safeAvatarUrl(user.avatar_url);
+      const name =
+        user.display_name ||
+        user.username ||
+        user.email ||
+        "Пользователь";
+
+      const style = avatarUrl
+        ? `style="background-image:url('${escapeHtml(avatarUrl)}')"`
+        : "";
+
+      return `
+        <div
+          class="avatar ${large ? "large" : ""}"
+          ${style}
+          aria-hidden="true"
+        >${avatarUrl ? "" : escapeHtml(getInitial(name))}</div>
+      `;
+    }
+
+    function renderUsers() {
+      usersSubtitle.textContent =
+        `Найдено: ${currentTotal.toLocaleString("ru-RU")}`;
+
+      if (!currentUsers.length) {
+        usersTableBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="empty-state">
+              <strong>Пользователи не найдены</strong>
+              Попробуй изменить поисковый запрос.
+            </td>
+          </tr>
+        `;
+      } else {
+        usersTableBody.innerHTML = currentUsers
+          .map((user, index) => {
+            const displayName =
+              user.display_name ||
+              user.username ||
+              "Без имени";
+
+            const username =
+              user.username
+                ? `@${user.username}`
+                : "Профиль не заполнен";
+
+            return `
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    ${avatarMarkup(user)}
+
+                    <div class="user-main">
+                      <strong>${escapeHtml(displayName)}</strong>
+                      <span>${escapeHtml(username)}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <td
+                  class="email-cell"
+                  title="${escapeHtml(user.email || "")}"
+                >${escapeHtml(user.email || "—")}</td>
+
+                <td>
+                  <span class="pill ${user.email_confirmed ? "confirmed" : "pending"}">
+                    ${user.email_confirmed ? "Подтверждён" : "Ожидает"}
+                  </span>
+                </td>
+
+                <td>${escapeHtml(formatDate(user.registered_at))}</td>
+                <td>${escapeHtml(formatDate(user.last_sign_in_at))}</td>
+
+                <td class="number-cell">
+                  ${Number(user.jokes_count || 0)}
+                </td>
+
+                <td class="number-cell">
+                  ${Number(user.comments_count || 0)}
+                </td>
+
+                <td class="number-cell">
+                  ${Number(user.followers_count || 0)}
+                </td>
+
+                <td>
+                  <button
+                    class="row-button"
+                    type="button"
+                    data-user-index="${index}"
+                  >Открыть</button>
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      const start =
+        currentTotal === 0
+          ? 0
+          : currentOffset + 1;
+
+      const end = Math.min(
+        currentOffset + currentUsers.length,
+        currentTotal
+      );
+
+      paginationInfo.textContent =
+        `${start}–${end} из ${currentTotal}`;
+
+      previousButton.disabled =
+        loading || currentOffset === 0;
+
+      nextButton.disabled =
+        loading ||
+        currentOffset + PAGE_SIZE >= currentTotal;
+    }
+
+    async function loadUsers({
+      resetOffset = false
+    } = {}) {
+      if (loading) return;
+
+      loading = true;
+
+      if (resetOffset) {
+        currentOffset = 0;
+      }
+
+      usersTableBody.innerHTML = `
+        <tr>
+          <td colspan="9" class="loading-state">
+            Загружаем пользователей…
+          </td>
+        </tr>
+      `;
+
+      previousButton.disabled = true;
+      nextButton.disabled = true;
+
+      try {
+        const { data, error } = await supabaseClient.rpc(
+          "smesno_admin_list_users",
+          {
+            p_search: currentSearch,
+            p_limit: PAGE_SIZE,
+            p_offset: currentOffset
+          }
+        );
+
+        if (error) throw error;
+
+        currentUsers = data || [];
+        currentTotal =
+          currentUsers.length
+            ? Number(currentUsers[0].total_count || 0)
+            : 0;
+
+        renderUsers();
+      } catch (error) {
+        console.error(error);
+
+        usersTableBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="empty-state">
+              <strong>Не удалось загрузить список</strong>
+              ${escapeHtml(error.message || "Неизвестная ошибка")}
+            </td>
+          </tr>
+        `;
+      } finally {
+        loading = false;
+        renderUsers();
+      }
+    }
+
+    async function loadDashboard() {
+      showScreen("dashboard");
+
+      await Promise.all([
+        loadStats(),
+        loadUsers({ resetOffset: true })
+      ]);
+    }
+
+    async function handleSession(session) {
+      if (!session?.user) {
+        showScreen("login");
+        return;
+      }
+
+      try {
+        const allowed = await verifyAdmin();
+
+        if (!allowed) {
+          showScreen("denied");
+          return;
+        }
+
+        await loadDashboard();
+      } catch (error) {
+        console.error(error);
+        showScreen("login");
+
+        setLoginStatus(
+          "Админ-функции ещё не настроены. Сначала выполни SQL-файл.",
+          "error"
+        );
+      }
+    }
+
+    function openUserDialog(user) {
+      const displayName =
+        user.display_name ||
+        user.username ||
+        "Без имени";
+
+      const username =
+        user.username
+          ? `@${user.username}`
+          : "Профиль не заполнен";
+
+      userDialogBody.innerHTML = `
+        <div class="profile-hero">
+          ${avatarMarkup(user, true)}
+
+          <div>
+            <strong>${escapeHtml(displayName)}</strong>
+            <span>${escapeHtml(username)}</span>
+          </div>
+        </div>
+
+        <div class="details-grid">
+          <div class="detail full">
+            <span>Email</span>
+            <strong>${escapeHtml(user.email || "—")}</strong>
+          </div>
+
+          <div class="detail">
+            <span>Регистрация</span>
+            <strong>${escapeHtml(formatDate(user.registered_at))}</strong>
+          </div>
+
+          <div class="detail">
+            <span>Последний вход</span>
+            <strong>${escapeHtml(formatDate(user.last_sign_in_at))}</strong>
+          </div>
+
+          <div class="detail">
+            <span>Email</span>
+            <strong>
+              ${user.email_confirmed ? "Подтверждён" : "Не подтверждён"}
+            </strong>
+          </div>
+
+          <div class="detail">
+            <span>Анекдоты</span>
+            <strong>${Number(user.jokes_count || 0)}</strong>
+          </div>
+
+          <div class="detail">
+            <span>Комментарии</span>
+            <strong>${Number(user.comments_count || 0)}</strong>
+          </div>
+
+          <div class="detail">
+            <span>Подписчики</span>
+            <strong>${Number(user.followers_count || 0)}</strong>
+          </div>
+
+          <div class="detail">
+            <span>Подписки</span>
+            <strong>${Number(user.following_count || 0)}</strong>
+          </div>
+
+          <div class="detail full">
+            <span>Описание профиля</span>
+            <strong>${escapeHtml(user.bio || "Не заполнено")}</strong>
+          </div>
+
+          <div class="detail full">
+            <span>ID пользователя</span>
+            <strong>${escapeHtml(user.id)}</strong>
+          </div>
+        </div>
+
+        <button
+          id="copyUserIdButton"
+          class="secondary-button copy-button"
+          type="button"
+        >Скопировать ID пользователя</button>
+      `;
+
+      userDialog.showModal();
+
+      document
+        .getElementById("copyUserIdButton")
+        .addEventListener("click", async event => {
+          try {
+            await navigator.clipboard.writeText(user.id);
+            event.currentTarget.textContent = "ID скопирован";
+          } catch {
+            event.currentTarget.textContent =
+              "Не удалось скопировать";
+          }
+        });
+    }
+
+    loginForm.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      setLoginStatus();
+      loginButton.disabled = true;
+      loginButton.textContent = "Проверяем…";
+
+      try {
+        const { data, error } =
+          await supabaseClient.auth.signInWithPassword({
+            email: emailInput.value.trim(),
+            password: passwordInput.value
+          });
+
+        if (error) throw error;
+
+        await handleSession(data.session);
+      } catch (error) {
+        console.error(error);
+
+        setLoginStatus(
+          "Не удалось войти. Проверь email и пароль.",
+          "error"
+        );
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = "Войти в панель";
+      }
+    });
+
+    async function signOut() {
+      await supabaseClient.auth.signOut();
+      currentUsers = [];
+      currentOffset = 0;
+      currentTotal = 0;
+      showScreen("login");
+      passwordInput.value = "";
+      setLoginStatus("Вы вышли из админ-панели.", "success");
+    }
+
+    signOutButton.addEventListener("click", signOut);
+    deniedSignOutButton.addEventListener("click", signOut);
+
+    refreshButton.addEventListener("click", async () => {
+      refreshButton.disabled = true;
+
+      try {
+        await Promise.all([
+          loadStats(),
+          loadUsers()
+        ]);
+      } finally {
+        refreshButton.disabled = false;
+      }
+    });
+
+    searchInput.addEventListener("input", () => {
+      window.clearTimeout(searchTimer);
+
+      searchTimer = window.setTimeout(async () => {
+        currentSearch = searchInput.value.trim();
+        await loadUsers({ resetOffset: true });
+      }, 350);
+    });
+
+    previousButton.addEventListener("click", async () => {
+      currentOffset = Math.max(0, currentOffset - PAGE_SIZE);
+      await loadUsers();
+    });
+
+    nextButton.addEventListener("click", async () => {
+      currentOffset += PAGE_SIZE;
+      await loadUsers();
+    });
+
+    usersTableBody.addEventListener("click", event => {
+      const button = event.target.closest("[data-user-index]");
+
+      if (!button) return;
+
+      const user =
+        currentUsers[Number(button.dataset.userIndex)];
+
+      if (user) {
+        openUserDialog(user);
+      }
+    });
+
+    closeDialogButton.addEventListener("click", () => {
+      userDialog.close();
+    });
+
+    userDialog.addEventListener("click", event => {
+      if (event.target === userDialog) {
+        userDialog.close();
+      }
+    });
+
+    supabaseClient.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) {
+          showScreen("login");
+        }
+      }
+    );
+
+    (async () => {
+      const { data } =
+        await supabaseClient.auth.getSession();
+
+      await handleSession(data.session);
+    })();
+  </script>
+</body>
+</html>
