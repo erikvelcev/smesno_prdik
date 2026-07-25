@@ -5455,7 +5455,70 @@
       filter: brightness(.98);
     }
 
-</style>
+
+
+    /* ============================================
+       ОБЛОЖКИ ПРОФИЛЕЙ
+       ============================================ */
+    .profile-card {
+      overflow: hidden;
+      position: relative;
+    }
+
+    .profile-cover {
+      height: clamp(145px, 28vw, 205px);
+      margin: -22px -22px 0;
+      border-bottom: 1px solid rgba(255,255,255,.18);
+      background:
+        radial-gradient(circle at 18% 20%, rgba(255,255,255,.30), transparent 30%),
+        linear-gradient(135deg, rgba(112,80,255,.88), rgba(239,71,111,.72));
+      background-position: center;
+      background-size: cover;
+      box-shadow: inset 0 -42px 52px rgba(10,8,16,.34);
+      position: relative;
+    }
+
+    .profile-cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(5,4,8,.02) 38%,
+          rgba(10,8,16,.58) 100%
+        );
+      pointer-events: none;
+    }
+
+    .profile-card.has-cover .profile-top {
+      margin-top: -38px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .profile-card.has-cover .profile-avatar {
+      border: 4px solid rgba(255,255,255,.94);
+      box-shadow:
+        0 14px 32px rgba(0,0,0,.26),
+        inset 0 1px 0 rgba(255,255,255,.28);
+    }
+
+    html[data-theme="dark"] .profile-card.has-cover .profile-avatar {
+      border-color: #1b1825;
+    }
+
+    @media (max-width: 520px) {
+      .profile-cover {
+        height: 150px;
+      }
+
+      .profile-card.has-cover .profile-top {
+        margin-top: -31px;
+      }
+    }
+
+  </style>
 </head>
 <body class="auth-locked">
 
@@ -5866,7 +5929,9 @@
           </div>
         </div>
 
-        <div class="profile-card public-profile-card">
+        <div id="publicProfileCard" class="profile-card public-profile-card">
+          <div id="publicProfileCover" class="profile-cover" hidden></div>
+
           <div class="profile-top public-profile-top">
             <div id="publicProfileAvatar" class="profile-avatar">А</div>
 
@@ -5969,7 +6034,9 @@
           </button>
         </div>
 
-        <div class="profile-card">
+        <div id="ownProfileCard" class="profile-card">
+          <div id="ownProfileCover" class="profile-cover" hidden></div>
+
           <div class="profile-top">
             <div id="profileAvatar" class="profile-avatar">Я</div>
             <div class="own-profile-info">
@@ -7331,6 +7398,7 @@
           display_name,
           bio,
           avatar_url,
+          cover_url,
           created_at
         `)
         .order("created_at", { ascending: true })
@@ -7346,7 +7414,8 @@
             username: profile.username,
             display_name: profile.display_name,
             bio: profile.bio || "",
-            avatar_url: profile.avatar_url || null
+            avatar_url: profile.avatar_url || null,
+            cover_url: profile.cover_url || null
           }
         ])
       );
@@ -8122,6 +8191,8 @@
     const recoverySubmit = document.getElementById("recoverySubmit");
     const authStatus = document.getElementById("authStatus");
     const signOutButton = document.getElementById("signOutButton");
+    const ownProfileCard = document.getElementById("ownProfileCard");
+    const ownProfileCover = document.getElementById("ownProfileCover");
     const ownProfileName = document.getElementById("ownProfileName");
     const ownProfileUsername = document.getElementById("ownProfileUsername");
     const ownProfileBio = document.getElementById("ownProfileBio");
@@ -8215,6 +8286,8 @@ const myJokes = document.getElementById("myJokes");
     const feedSharePreview = document.getElementById("feedSharePreview");
     const feedShareContacts = document.getElementById("feedShareContacts");
 
+    const publicProfileCard = document.getElementById("publicProfileCard");
+    const publicProfileCover = document.getElementById("publicProfileCover");
     const publicProfileBack = document.getElementById("publicProfileBack");
     const publicProfileHandleTop = document.getElementById("publicProfileHandleTop");
     const publicProfileAvatar = document.getElementById("publicProfileAvatar");
@@ -8264,6 +8337,16 @@ const myJokes = document.getElementById("myJokes");
         .replace(/'/g, "%27");
 
       return `style="background-image:url('${escaped}')"`;
+    }
+
+    function setCoverElement(cardElement, coverElement, coverUrl) {
+      const safeUrl = safeAvatarUrl(coverUrl);
+
+      cardElement.classList.toggle("has-cover", Boolean(safeUrl));
+      coverElement.hidden = !safeUrl;
+      coverElement.style.backgroundImage = safeUrl
+        ? `url("${safeUrl.replaceAll('"', '%22')}")`
+        : "";
     }
 
     function setAvatarElement(element, avatarUrl, name) {
@@ -8390,7 +8473,7 @@ const myJokes = document.getElementById("myJokes");
       const { data: existingProfile, error: selectError } =
         await supabaseClient
           .from("profiles")
-          .select("id, username, display_name, bio, avatar_url, created_at")
+          .select("id, username, display_name, bio, avatar_url, cover_url, created_at")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -8408,7 +8491,7 @@ const myJokes = document.getElementById("myJokes");
             username: fallbackUsername,
             display_name: fallbackName
           })
-          .select("id, username, display_name, bio, avatar_url, created_at")
+          .select("id, username, display_name, bio, avatar_url, cover_url, created_at")
           .single();
 
       if (insertError) throw insertError;
@@ -8434,7 +8517,9 @@ const myJokes = document.getElementById("myJokes");
         "Здесь хранятся мои анекдоты и всё, что мне понравилось.";
 
       const avatarUrl = profile?.avatar_url || null;
+      const coverUrl = profile?.cover_url || null;
 
+      setCoverElement(ownProfileCard, ownProfileCover, coverUrl);
       ownProfileName.textContent = name;
       ownProfileUsername.textContent = `@${username}`;
       ownProfileBio.textContent = bio;
@@ -10371,6 +10456,7 @@ if (!ownJokes.length) {
         handle: `@${profile.username || "user"}`,
         initial: getInitial(profile.display_name),
         avatarUrl: profile.avatar_url || null,
+        coverUrl: profile.cover_url || null,
         bio:
           profile.bio ||
           "Публикует анекдоты в общей ленте.",
@@ -10392,6 +10478,12 @@ if (!ownJokes.length) {
 
     function renderPublicProfile(profile) {
       activePublicProfile = profile;
+
+      setCoverElement(
+        publicProfileCard,
+        publicProfileCover,
+        profile.coverUrl
+      );
 
       setAvatarElement(
         publicProfileAvatar,
