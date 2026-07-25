@@ -1233,6 +1233,52 @@
       return /^https:\/\//i.test(url) ? url : "";
     }
 
+
+    function getCoverFileExtension(file) {
+      const fromName = String(file?.name || "")
+        .split(".")
+        .pop()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+
+      if (fromName && fromName.length <= 5) {
+        return fromName;
+      }
+
+      const mimeMap = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/webp": "webp",
+        "image/gif": "gif"
+      };
+
+      return mimeMap[file?.type] || "jpg";
+    }
+
+    function getCoverObjectPath(publicUrl) {
+      const cleanUrl = String(publicUrl || "")
+        .split("?")[0];
+
+      const marker =
+        "/storage/v1/object/public/profile-covers/";
+
+      const markerIndex = cleanUrl.indexOf(marker);
+
+      if (markerIndex < 0) {
+        return "";
+      }
+
+      try {
+        return decodeURIComponent(
+          cleanUrl.slice(markerIndex + marker.length)
+        );
+      } catch {
+        return cleanUrl.slice(
+          markerIndex + marker.length
+        );
+      }
+    }
+
     function getInitial(value) {
       const clean = String(value || "U").trim();
       return clean.charAt(0).toUpperCase() || "U";
@@ -1718,14 +1764,21 @@
         setCoverStatus("Загружаем обложку…");
 
         try {
-          const objectPath = `${user.id}/cover`;
+          const oldObjectPath =
+            getCoverObjectPath(user.cover_url);
+
+          const extension =
+            getCoverFileExtension(selectedCoverFile);
+
+          const objectPath =
+            `${user.id}/cover-${Date.now()}.${extension}`;
 
           const { error: uploadError } = await supabaseClient
             .storage
             .from("profile-covers")
             .upload(objectPath, selectedCoverFile, {
-              upsert: true,
-              cacheControl: "3600",
+              upsert: false,
+              cacheControl: "31536000",
               contentType: selectedCoverFile.type
             });
 
@@ -1736,7 +1789,7 @@
             .from("profile-covers")
             .getPublicUrl(objectPath);
 
-          const coverUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+          const coverUrl = publicUrlData.publicUrl;
 
           const { error: updateError } = await supabaseClient.rpc(
             "smesno_admin_set_profile_cover",
@@ -1746,9 +1799,30 @@
             }
           );
 
-          if (updateError) throw updateError;
+          if (updateError) {
+            await supabaseClient.storage
+              .from("profile-covers")
+              .remove([objectPath]);
+
+            throw updateError;
+          }
 
           user.cover_url = coverUrl;
+
+          if (
+            oldObjectPath &&
+            oldObjectPath !== objectPath
+          ) {
+            supabaseClient.storage
+              .from("profile-covers")
+              .remove([oldObjectPath])
+              .catch(error => {
+                console.warn(
+                  "Не удалось удалить старую обложку:",
+                  error
+                );
+              });
+          }
           setCoverStatus("Обложка назначена.", "success");
           coverPreview.style.setProperty(
             "--cover-image",
