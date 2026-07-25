@@ -761,6 +761,127 @@
         flex: 1;
       }
     }
+  
+
+    /* Управление обложкой профиля */
+    .admin-cover-card {
+      margin-top: 18px;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 19px;
+      background: rgba(255,255,255,.025);
+    }
+
+    .admin-cover-preview {
+      height: 168px;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--muted);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255,255,255,.17), transparent 30%),
+        linear-gradient(135deg, rgba(150,113,255,.25), rgba(239,104,173,.13));
+      background-position: center;
+      background-size: cover;
+      font-size: 11px;
+      font-weight: 800;
+      position: relative;
+    }
+
+    .admin-cover-preview.has-image::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 55%, rgba(8,6,12,.45));
+      pointer-events: none;
+    }
+
+    .admin-cover-heading {
+      margin: 12px 2px 9px;
+    }
+
+    .admin-cover-heading strong,
+    .admin-cover-heading span {
+      display: block;
+    }
+
+    .admin-cover-heading strong {
+      font-size: 13px;
+    }
+
+    .admin-cover-heading span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .admin-cover-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .admin-cover-upload {
+      min-height: 42px;
+      padding: 0 13px;
+      border: 0;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .admin-cover-upload input {
+      display: none;
+    }
+
+    .admin-cover-remove {
+      min-height: 42px;
+      padding: 0 13px;
+      border: 1px solid rgba(255,111,145,.20);
+      border-radius: 13px;
+      color: #ff9db4;
+      background: rgba(255,111,145,.07);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .admin-cover-save {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 9px;
+    }
+
+    .admin-cover-status {
+      min-height: 17px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .admin-cover-status[data-type="error"] {
+      color: #ff9db4;
+    }
+
+    .admin-cover-status[data-type="success"] {
+      color: var(--success);
+    }
+
+    @media (max-width: 440px) {
+      .admin-cover-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -1294,7 +1415,7 @@
 
       try {
         const { data, error } = await supabaseClient.rpc(
-          "smesno_admin_list_users",
+          "smesno_admin_list_users_with_covers",
           {
             p_search: currentSearch,
             p_limit: PAGE_SIZE,
@@ -1384,6 +1505,54 @@
           </div>
         </div>
 
+        <section class="admin-cover-card">
+          <div
+            id="adminCoverPreview"
+            class="admin-cover-preview ${safeAvatarUrl(user.cover_url) ? "has-image" : ""}"
+            ${safeAvatarUrl(user.cover_url)
+              ? `style="background-image:url('${escapeHtml(safeAvatarUrl(user.cover_url))}')"`
+              : ""}
+          >${safeAvatarUrl(user.cover_url) ? "" : "Обложка ещё не назначена"}</div>
+
+          <div class="admin-cover-heading">
+            <strong>Обложка профиля</strong>
+            <span>
+              Изображение появится широким баннером над аватаром.
+              PNG, JPEG, WEBP или GIF — до 8 МБ.
+            </span>
+          </div>
+
+          <div class="admin-cover-actions">
+            <label class="admin-cover-upload">
+              Выбрать изображение
+              <input
+                id="adminCoverInput"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+              >
+            </label>
+
+            <button
+              id="adminCoverRemoveButton"
+              class="admin-cover-remove"
+              type="button"
+            >Удалить</button>
+          </div>
+
+          <button
+            id="adminCoverSaveButton"
+            class="primary-button admin-cover-save"
+            type="button"
+            disabled
+          >Выдать обложку</button>
+
+          <div
+            id="adminCoverStatus"
+            class="admin-cover-status"
+            aria-live="polite"
+          ></div>
+        </section>
+
         <div class="details-grid">
           <div class="detail full">
             <span>Email</span>
@@ -1446,6 +1615,156 @@
       `;
 
       userDialog.showModal();
+
+      const coverPreview = document.getElementById("adminCoverPreview");
+      const coverInput = document.getElementById("adminCoverInput");
+      const coverSaveButton = document.getElementById("adminCoverSaveButton");
+      const coverRemoveButton = document.getElementById("adminCoverRemoveButton");
+      const coverStatus = document.getElementById("adminCoverStatus");
+      let selectedCoverFile = null;
+      let localPreviewUrl = null;
+
+      function setCoverStatus(message = "", type = "") {
+        coverStatus.textContent = message;
+        coverStatus.dataset.type = type;
+      }
+
+      coverInput.addEventListener("change", () => {
+        const file = coverInput.files?.[0] || null;
+        selectedCoverFile = file;
+        coverSaveButton.disabled = !file;
+        setCoverStatus();
+
+        if (localPreviewUrl) {
+          URL.revokeObjectURL(localPreviewUrl);
+          localPreviewUrl = null;
+        }
+
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+          selectedCoverFile = null;
+          coverSaveButton.disabled = true;
+          setCoverStatus("Выбери файл изображения.", "error");
+          return;
+        }
+
+        if (file.size > 8 * 1024 * 1024) {
+          selectedCoverFile = null;
+          coverSaveButton.disabled = true;
+          setCoverStatus("Файл больше 8 МБ.", "error");
+          return;
+        }
+
+        localPreviewUrl = URL.createObjectURL(file);
+        coverPreview.style.backgroundImage = `url("${localPreviewUrl}")`;
+        coverPreview.classList.add("has-image");
+        coverPreview.textContent = "";
+      });
+
+      coverSaveButton.addEventListener("click", async () => {
+        if (!selectedCoverFile) return;
+
+        coverSaveButton.disabled = true;
+        coverRemoveButton.disabled = true;
+        setCoverStatus("Загружаем обложку…");
+
+        try {
+          const objectPath = `${user.id}/cover`;
+
+          const { error: uploadError } = await supabaseClient
+            .storage
+            .from("profile-covers")
+            .upload(objectPath, selectedCoverFile, {
+              upsert: true,
+              cacheControl: "3600",
+              contentType: selectedCoverFile.type
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: publicUrlData } = supabaseClient
+            .storage
+            .from("profile-covers")
+            .getPublicUrl(objectPath);
+
+          const coverUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+
+          const { error: updateError } = await supabaseClient.rpc(
+            "smesno_admin_set_profile_cover",
+            {
+              p_user_id: user.id,
+              p_cover_url: coverUrl
+            }
+          );
+
+          if (updateError) throw updateError;
+
+          user.cover_url = coverUrl;
+          setCoverStatus("Обложка назначена.", "success");
+          coverPreview.style.backgroundImage = `url("${coverUrl}")`;
+          coverPreview.classList.add("has-image");
+          coverPreview.textContent = "";
+          selectedCoverFile = null;
+          coverInput.value = "";
+          await loadUsers();
+        } catch (error) {
+          console.error(error);
+          setCoverStatus(
+            error.message || "Не удалось назначить обложку.",
+            "error"
+          );
+        } finally {
+          coverSaveButton.disabled = !selectedCoverFile;
+          coverRemoveButton.disabled = false;
+        }
+      });
+
+      coverRemoveButton.addEventListener("click", async () => {
+        if (!confirm("Удалить обложку этого пользователя?")) return;
+
+        coverSaveButton.disabled = true;
+        coverRemoveButton.disabled = true;
+        setCoverStatus("Удаляем обложку…");
+
+        try {
+          const objectPath = `${user.id}/cover`;
+
+          const { error: storageError } = await supabaseClient
+            .storage
+            .from("profile-covers")
+            .remove([objectPath]);
+
+          if (storageError && !String(storageError.message).toLowerCase().includes("not found")) {
+            throw storageError;
+          }
+
+          const { error: updateError } = await supabaseClient.rpc(
+            "smesno_admin_set_profile_cover",
+            {
+              p_user_id: user.id,
+              p_cover_url: null
+            }
+          );
+
+          if (updateError) throw updateError;
+
+          user.cover_url = null;
+          coverPreview.style.backgroundImage = "";
+          coverPreview.classList.remove("has-image");
+          coverPreview.textContent = "Обложка ещё не назначена";
+          setCoverStatus("Обложка удалена.", "success");
+          await loadUsers();
+        } catch (error) {
+          console.error(error);
+          setCoverStatus(
+            error.message || "Не удалось удалить обложку.",
+            "error"
+          );
+        } finally {
+          coverRemoveButton.disabled = false;
+        }
+      });
 
       document
         .getElementById("copyUserIdButton")
