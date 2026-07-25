@@ -882,6 +882,50 @@
       }
     }
 
+  
+    /* Обложка целиком: размытый фон + изображение без обрезки */
+    .admin-cover-preview.has-image {
+      background: #0b0910 !important;
+      isolation: isolate;
+    }
+
+    .admin-cover-preview.has-image::before {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      inset: -22px;
+      background-image: var(--cover-image);
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      filter:
+        blur(18px)
+        brightness(.48)
+        saturate(1.12);
+      transform: scale(1.10);
+      pointer-events: none;
+    }
+
+    .admin-cover-preview.has-image::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      background-image:
+        linear-gradient(
+          180deg,
+          rgba(5,4,8,.02) 58%,
+          rgba(5,4,8,.30) 100%
+        ),
+        var(--cover-image);
+      background-position: center, center;
+      background-size: 100% 100%, contain;
+      background-repeat: no-repeat, no-repeat;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.04);
+      pointer-events: none;
+    }
+
   </style>
 </head>
 
@@ -1510,7 +1554,7 @@
             id="adminCoverPreview"
             class="admin-cover-preview ${safeAvatarUrl(user.cover_url) ? "has-image" : ""}"
             ${safeAvatarUrl(user.cover_url)
-              ? `style="background-image:url('${escapeHtml(safeAvatarUrl(user.cover_url))}')"`
+              ? `style="--cover-image:url('${escapeHtml(safeAvatarUrl(user.cover_url))}')"`
               : ""}
           >${safeAvatarUrl(user.cover_url) ? "" : "Обложка ещё не назначена"}</div>
 
@@ -1657,7 +1701,11 @@
         }
 
         localPreviewUrl = URL.createObjectURL(file);
-        coverPreview.style.backgroundImage = `url("${localPreviewUrl}")`;
+        coverPreview.style.setProperty(
+          "--cover-image",
+          `url("${localPreviewUrl.replaceAll('"', '%22')}")`
+        );
+        coverPreview.style.backgroundImage = "";
         coverPreview.classList.add("has-image");
         coverPreview.textContent = "";
       });
@@ -1702,7 +1750,11 @@
 
           user.cover_url = coverUrl;
           setCoverStatus("Обложка назначена.", "success");
-          coverPreview.style.backgroundImage = `url("${coverUrl}")`;
+          coverPreview.style.setProperty(
+            "--cover-image",
+            `url("${coverUrl.replaceAll('"', '%22')}")`
+          );
+          coverPreview.style.backgroundImage = "";
           coverPreview.classList.add("has-image");
           coverPreview.textContent = "";
           selectedCoverFile = null;
@@ -1751,6 +1803,7 @@
 
           user.cover_url = null;
           coverPreview.style.backgroundImage = "";
+          coverPreview.style.removeProperty("--cover-image");
           coverPreview.classList.remove("has-image");
           coverPreview.textContent = "Обложка ещё не назначена";
           setCoverStatus("Обложка удалена.", "success");
