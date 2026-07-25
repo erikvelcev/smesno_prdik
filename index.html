@@ -7959,6 +7959,36 @@
         }
       };
 
+
+      const reloadProfiles = async payload => {
+        try {
+          const profileId =
+            payload?.new?.id ||
+            payload?.old?.id;
+
+          if (!profileId) return;
+
+          await loadFreshProfile(profileId);
+
+          if (
+            activePublicProfile &&
+            activePublicProfile.id === profileId
+          ) {
+            const profile =
+              getPublicProfile(profileId);
+
+            if (profile) {
+              renderPublicProfile(profile);
+            }
+          }
+
+          renderProfile();
+          renderSearchResults(searchInput.value);
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
       const reloadMessages = async payload => {
         try {
           await loadMessagesData();
@@ -8031,6 +8061,15 @@
             table: "messages"
           },
           reloadMessages
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles"
+          },
+          reloadProfiles
         )
         .on(
           "postgres_changes",
@@ -8383,6 +8422,92 @@ const myJokes = document.getElementById("myJokes");
         .replace(/'/g, "%27");
 
       return `style="background-image:url('${escaped}')"`;
+    }
+
+
+    async function loadFreshProfile(profileId) {
+      if (!profileId) return null;
+
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select(`
+          id,
+          username,
+          display_name,
+          bio,
+          avatar_url,
+          cover_url,
+          created_at
+        `)
+        .eq("id", profileId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+
+      const normalizedProfile = {
+        id: data.id,
+        username: data.username,
+        display_name: data.display_name,
+        bio: data.bio || "",
+        avatar_url: data.avatar_url || null,
+        cover_url: data.cover_url || null
+      };
+
+      databaseProfiles.set(
+        data.id,
+        normalizedProfile
+      );
+
+      if (
+        currentAuthUser &&
+        data.id === currentAuthUser.id
+      ) {
+        currentDatabaseProfile = {
+          ...(currentDatabaseProfile || {}),
+          ...normalizedProfile
+        };
+
+        setCoverElement(
+          ownProfileCard,
+          ownProfileCover,
+          normalizedProfile.cover_url
+        );
+      }
+
+      return normalizedProfile;
+    }
+
+    async function refreshVisibleProfileCovers() {
+      const profileIds = new Set();
+
+      if (currentAuthUser?.id) {
+        profileIds.add(currentAuthUser.id);
+      }
+
+      if (activePublicProfile?.id) {
+        profileIds.add(activePublicProfile.id);
+      }
+
+      for (const profileId of profileIds) {
+        try {
+          await loadFreshProfile(profileId);
+        } catch (error) {
+          console.error(
+            "Не удалось обновить обложку профиля:",
+            error
+          );
+        }
+      }
+
+      if (activePublicProfile?.id) {
+        const freshPublicProfile =
+          getPublicProfile(activePublicProfile.id);
+
+        if (freshPublicProfile) {
+          renderPublicProfile(freshPublicProfile);
+        }
+      }
     }
 
     function setCoverElement(cardElement, coverElement, coverUrl) {
@@ -8855,6 +8980,20 @@ const myJokes = document.getElementById("myJokes");
         }, 1200);
       }
     });
+
+
+    window.addEventListener("focus", () => {
+      refreshVisibleProfileCovers();
+    });
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (document.visibilityState === "visible") {
+          refreshVisibleProfileCovers();
+        }
+      }
+    );
 
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
@@ -10606,16 +10745,33 @@ if (!ownJokes.length) {
       }).join("");
     }
 
-    function openPublicProfile(profileId, returnPage = currentPage) {
+    async function openPublicProfile(
+      profileId,
+      returnPage = currentPage
+    ) {
+      try {
+        await loadFreshProfile(profileId);
+      } catch (error) {
+        console.error(
+          "Не удалось получить свежий профиль:",
+          error
+        );
+      }
+
       const profile = getPublicProfile(profileId);
       if (!profile) return;
 
       publicProfileReturnPage =
-        returnPage === "publicProfile" ? "home" : returnPage;
+        returnPage === "publicProfile"
+          ? "home"
+          : returnPage;
 
       renderPublicProfile(profile);
       switchPage("publicProfile");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
     }
 
     publicProfileBack.addEventListener("click", () => {
