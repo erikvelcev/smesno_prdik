@@ -926,6 +926,31 @@
       pointer-events: none;
     }
 
+  
+
+    @media (max-width: 768px),
+           (hover: none) and (pointer: coarse) {
+      .glass,
+      .topbar,
+      .login-card,
+      .users-panel,
+      .modal {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+
+      .glass {
+        box-shadow:
+          0 10px 26px rgba(0,0,0,.24),
+          inset 0 1px 0 rgba(255,255,255,.04) !important;
+      }
+
+      tbody tr {
+        content-visibility: auto;
+        contain-intrinsic-size: 66px;
+      }
+    }
+
   </style>
 </head>
 
@@ -1233,6 +1258,60 @@
       return /^https:\/\//i.test(url) ? url : "";
     }
 
+
+
+    async function optimizeCoverFile(file) {
+      if (
+        !file ||
+        !file.type.startsWith("image/") ||
+        file.type === "image/gif"
+      ) {
+        return file;
+      }
+
+      const bitmap = await createImageBitmap(file);
+      const ratio = Math.min(
+        1,
+        1600 / bitmap.width,
+        900 / bitmap.height
+      );
+
+      if (ratio >= 1 && file.size < 900 * 1024) {
+        bitmap.close?.();
+        return file;
+      }
+
+      const width = Math.max(
+        1,
+        Math.round(bitmap.width * ratio)
+      );
+      const height = Math.max(
+        1,
+        Math.round(bitmap.height * ratio)
+      );
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const context = canvas.getContext("2d", {
+        alpha: false
+      });
+
+      context.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close?.();
+
+      const blob = await new Promise(resolve => {
+        canvas.toBlob(resolve, "image/webp", .82);
+      });
+
+      if (!blob) return file;
+
+      return new File(
+        [blob],
+        `${file.name.replace(/\.[^.]+$/, "")}.webp`,
+        { type: "image/webp" }
+      );
+    }
 
     function getCoverFileExtension(file) {
       const fromName = String(file?.name || "")
@@ -1767,8 +1846,11 @@
           const oldObjectPath =
             getCoverObjectPath(user.cover_url);
 
+          const optimizedCoverFile =
+            await optimizeCoverFile(selectedCoverFile);
+
           const extension =
-            getCoverFileExtension(selectedCoverFile);
+            getCoverFileExtension(optimizedCoverFile);
 
           const objectPath =
             `${user.id}/cover-${Date.now()}.${extension}`;
@@ -1776,10 +1858,10 @@
           const { error: uploadError } = await supabaseClient
             .storage
             .from("profile-covers")
-            .upload(objectPath, selectedCoverFile, {
+            .upload(objectPath, optimizedCoverFile, {
               upsert: false,
               cacheControl: "31536000",
-              contentType: selectedCoverFile.type
+              contentType: optimizedCoverFile.type
             });
 
           if (uploadError) throw uploadError;

@@ -5564,6 +5564,107 @@
       pointer-events: none;
     }
 
+  
+
+    /* ============================================
+       МОБИЛЬНАЯ ОПТИМИЗАЦИЯ
+       ============================================ */
+    @media (max-width: 768px),
+           (hover: none) and (pointer: coarse) {
+      html,
+      body {
+        overscroll-behavior-y: none;
+      }
+
+      .auth-background-orb,
+      .daily-contest-flame,
+      .profile-fire-icon {
+        animation: none !important;
+      }
+
+      .bottom-nav,
+      .auth-shell,
+      .card,
+      .compose-card,
+      .search-card,
+      .profile-card,
+      .messenger-card,
+      .settings-dialog-inner,
+      .profile-joke-dialog-inner,
+      .feed-share-dialog-inner,
+      .edit-profile-dialog-inner,
+      .edit-joke-dialog-inner,
+      .daily-contest-card {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+
+      .card,
+      .compose-card,
+      .search-card,
+      .profile-card,
+      .messenger-card,
+      .daily-contest-card {
+        box-shadow:
+          0 9px 24px rgba(0,0,0,.16),
+          inset 0 1px 0 rgba(255,255,255,.04) !important;
+      }
+
+      .nav-home-button .home-glass-icon,
+      .nav-search-button .search-glass-icon,
+      .nav-messages-button .message-plane-icon,
+      .nav-profile-button .profile-glass-icon,
+      .nav-button.active .home-glass-icon,
+      .nav-button.active .search-glass-icon,
+      .nav-button.active .message-plane-icon,
+      .nav-button.active .profile-glass-icon {
+        transform: none !important;
+        filter: none !important;
+        transition: opacity .16s ease !important;
+      }
+
+      .nav-home-button .home-glass-icon-wrap::before,
+      .nav-search-button .search-glass-icon-wrap::before,
+      .nav-messages-button .message-plane-icon-wrap::before,
+      .nav-profile-button .profile-glass-icon-wrap::before {
+        box-shadow: none !important;
+      }
+
+      .profile-cover::before {
+        display: none !important;
+      }
+
+      .user-search-card,
+      .my-joke-item,
+      .comment-item,
+      .contact-button,
+      .search-joke-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 74px;
+      }
+
+      .card.back-2 {
+        display: none !important;
+      }
+
+      .auth-background-orb {
+        filter: none !important;
+        opacity: .13 !important;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .home-glass-icon,
+      .search-glass-icon,
+      .message-plane-icon,
+      .profile-glass-icon,
+      .daily-contest-flame,
+      .profile-fire-icon {
+        animation: none !important;
+        transition-duration: .01ms !important;
+      }
+    }
+
   </style>
 </head>
 <body class="auth-locked">
@@ -6872,6 +6973,8 @@
     let jokeStats = {};
     let userVotes = {};
     let jokeComments = {};
+    let commentCountsByJokeId = new Map();
+    let loadedCommentJokeIds = new Set();
     let reactionRows = [];
     let followRows = [];
     let followedProfileIds = new Set();
@@ -6887,11 +6990,70 @@
     let lastObservedContestDate = "";
     const CONTEST_TIME_ZONE = "Europe/Chisinau";
 
+    const MOBILE_DEVICE = window.matchMedia(
+      "(hover: none) and (pointer: coarse)"
+    ).matches || window.innerWidth <= 768;
+
+    const FEED_LIMIT = MOBILE_DEVICE ? 100 : 180;
+    const PROFILE_LIMIT = MOBILE_DEVICE ? 350 : 650;
+    const REACTION_LIMIT = MOBILE_DEVICE ? 5000 : 10000;
+    const COMMENT_COUNT_LIMIT = MOBILE_DEVICE ? 5000 : 10000;
+    const FOLLOW_LIMIT = MOBILE_DEVICE ? 5000 : 10000;
+    const MESSAGE_LIMIT = MOBILE_DEVICE ? 600 : 1600;
+    const CARD_STACK_SIZE = MOBILE_DEVICE ? 2 : 3;
+
+    const realtimeRefreshTimers = new Map();
+
+    function scheduleRealtimeRefresh(
+      key,
+      callback,
+      delay = MOBILE_DEVICE ? 550 : 280
+    ) {
+      const existing = realtimeRefreshTimers.get(key);
+
+      if (existing) {
+        window.clearTimeout(existing);
+      }
+
+      const timer = window.setTimeout(async () => {
+        realtimeRefreshTimers.delete(key);
+
+        try {
+          await callback();
+        } catch (error) {
+          console.error(`Realtime ${key} error:`, error);
+        }
+      }, delay);
+
+      realtimeRefreshTimers.set(key, timer);
+    }
+
+    function runWhenIdle(callback, timeout = 1200) {
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(
+          () => callback(),
+          { timeout }
+        );
+        return;
+      }
+
+      window.setTimeout(callback, MOBILE_DEVICE ? 350 : 120);
+    }
+
     function getComments(joke) {
       return jokeComments[jokeKey(joke)] || [];
     }
 
     function getTotalCommentCount(joke) {
+      const record = getSharedJokeRecord(joke);
+
+      if (
+        record &&
+        commentCountsByJokeId.has(record.id)
+      ) {
+        return commentCountsByJokeId.get(record.id) || 0;
+      }
+
       return getComments(joke).reduce(
         (total, comment) =>
           total +
@@ -7154,7 +7316,7 @@
           )
         `)
         .order("contest_date", { ascending: false })
-        .limit(500);
+        .limit(FEED_LIMIT);
 
       if (error) throw error;
 
@@ -7421,7 +7583,7 @@
             }
           }
         },
-        1000
+        MOBILE_DEVICE ? 30000 : 5000
       );
     }
 
@@ -7448,7 +7610,7 @@
           created_at
         `)
         .order("created_at", { ascending: true })
-        .limit(1000);
+        .limit(PROFILE_LIMIT);
 
       if (error) throw error;
 
@@ -7528,6 +7690,16 @@
     }
 
     async function loadReactionData() {
+      const jokeIds = sharedJokes
+        .map(record => record.id)
+        .filter(Boolean);
+
+      reactionRows = [];
+      jokeStats = {};
+      userVotes = {};
+
+      if (!jokeIds.length) return;
+
       const { data, error } = await supabaseClient
         .from("joke_reactions")
         .select(`
@@ -7536,13 +7708,12 @@
           reaction,
           created_at
         `)
-        .limit(20000);
+        .in("joke_id", jokeIds)
+        .limit(REACTION_LIMIT);
 
       if (error) throw error;
 
       reactionRows = data || [];
-      jokeStats = {};
-      userVotes = {};
 
       const idToText = new Map(
         sharedJokes.map(record => [
@@ -7576,50 +7747,91 @@
       });
     }
 
-    async function loadCommentData() {
-      const [
-        commentsResponse,
-        likesResponse
-      ] = await Promise.all([
-        supabaseClient
-          .from("comments")
-          .select(`
-            id,
-            joke_id,
-            author_id,
-            parent_id,
-            content,
-            created_at,
-            author:profiles!comments_author_id_fkey (
-              id,
-              username,
-              display_name,
-              avatar_url
-            )
-          `)
-          .order("created_at", { ascending: true })
-          .limit(10000),
+    async function loadCommentCounts() {
+      const jokeIds = sharedJokes
+        .map(record => record.id)
+        .filter(Boolean);
 
-        supabaseClient
+      commentCountsByJokeId = new Map();
+
+      if (!jokeIds.length) return;
+
+      const { data, error } = await supabaseClient
+        .from("comments")
+        .select("joke_id")
+        .in("joke_id", jokeIds)
+        .limit(COMMENT_COUNT_LIMIT);
+
+      if (error) throw error;
+
+      (data || []).slice().reverse().forEach(row => {
+        commentCountsByJokeId.set(
+          row.joke_id,
+          (commentCountsByJokeId.get(row.joke_id) || 0) + 1
+        );
+      });
+    }
+
+    async function loadCommentsForJoke(
+      jokeId,
+      jokeText,
+      { force = false } = {}
+    ) {
+      if (!jokeId || !jokeText) return;
+
+      if (
+        !force &&
+        loadedCommentJokeIds.has(jokeId)
+      ) {
+        return;
+      }
+
+      const commentsResponse = await supabaseClient
+        .from("comments")
+        .select(`
+          id,
+          joke_id,
+          author_id,
+          parent_id,
+          content,
+          created_at,
+          author:profiles!comments_author_id_fkey (
+            id,
+            username,
+            display_name,
+            avatar_url
+          )
+        `)
+        .eq("joke_id", jokeId)
+        .order("created_at", { ascending: true })
+        .limit(800);
+
+      if (commentsResponse.error) {
+        throw commentsResponse.error;
+      }
+
+      const comments = commentsResponse.data || [];
+      const commentIds = comments.map(row => row.id);
+      let likes = [];
+
+      if (commentIds.length) {
+        const likesResponse = await supabaseClient
           .from("comment_likes")
           .select(`
             comment_id,
             user_id,
             created_at
           `)
-          .limit(20000)
-      ]);
+          .in("comment_id", commentIds)
+          .limit(3000);
 
-      if (commentsResponse.error) {
-        throw commentsResponse.error;
+        if (likesResponse.error) {
+          throw likesResponse.error;
+        }
+
+        likes = likesResponse.data || [];
       }
 
-      if (likesResponse.error) {
-        throw likesResponse.error;
-      }
-
-      const comments = commentsResponse.data || [];
-      const likes = likesResponse.data || [];
       const likeCounts = new Map();
       const likedByMe = new Set();
 
@@ -7635,7 +7847,7 @@
       });
 
       const idToComment = new Map();
-      const byJoke = new Map();
+      const normalized = [];
 
       comments.forEach(row => {
         const author = Array.isArray(row.author)
@@ -7661,43 +7873,58 @@
         };
 
         idToComment.set(row.id, comment);
-
-        if (!byJoke.has(row.joke_id)) {
-          byJoke.set(row.joke_id, []);
-        }
-
-        byJoke.get(row.joke_id).push(comment);
+        normalized.push(comment);
       });
 
-      jokeComments = {};
+      const roots = normalized.filter(
+        comment => !comment.parentId
+      );
 
-      sharedJokes.forEach(record => {
-        const all = byJoke.get(record.id) || [];
-        const roots = all.filter(
-          comment => !comment.parentId
+      normalized
+        .filter(comment => comment.parentId)
+        .forEach(reply => {
+          const parent = idToComment.get(reply.parentId);
+          if (!parent) return;
+
+          reply.replyTo = parent.handle;
+
+          const root = parent.parentId
+            ? idToComment.get(parent.parentId)
+            : parent;
+
+          if (root) {
+            root.replies.push(reply);
+          }
+        });
+
+      jokeComments[jokeKey(jokeText)] = roots;
+      commentCountsByJokeId.set(jokeId, comments.length);
+      loadedCommentJokeIds.add(jokeId);
+    }
+
+    async function loadCommentData(options = {}) {
+      const activeDialogJoke =
+        profileJokeDialog?.open && activeJokeInDialog
+          ? activeJokeInDialog
+          : "";
+
+      const jokeText =
+        options.joke || activeDialogJoke;
+
+      const jokeId =
+        options.jokeId ||
+        (jokeText ? getJokeId(jokeText) : null);
+
+      if (jokeId && jokeText) {
+        await loadCommentsForJoke(
+          jokeId,
+          jokeText,
+          { force: options.force !== false }
         );
+        return;
+      }
 
-        all
-          .filter(comment => comment.parentId)
-          .forEach(reply => {
-            const parent =
-              idToComment.get(reply.parentId);
-
-            if (!parent) return;
-
-            reply.replyTo = parent.handle;
-
-            const root = parent.parentId
-              ? idToComment.get(parent.parentId)
-              : parent;
-
-            if (root) {
-              root.replies.push(reply);
-            }
-          });
-
-        jokeComments[jokeKey(record.content)] = roots;
-      });
+      await loadCommentCounts();
     }
 
     function getFollowCount(profileId) {
@@ -7715,7 +7942,7 @@
           following_id,
           created_at
         `)
-        .limit(20000);
+        .limit(FOLLOW_LIMIT);
 
       if (error) throw error;
 
@@ -7803,8 +8030,8 @@
         .or(
           `sender_id.eq.${currentAuthUser.id},receiver_id.eq.${currentAuthUser.id}`
         )
-        .order("created_at", { ascending: true })
-        .limit(10000);
+        .order("created_at", { ascending: false })
+        .limit(MESSAGE_LIMIT);
 
       if (error) throw error;
 
@@ -8024,7 +8251,10 @@
             schema: "public",
             table: "joke_reactions"
           },
-          reloadReactions
+          payload => scheduleRealtimeRefresh(
+            "reactions",
+            () => reloadReactions(payload)
+          )
         )
         .on(
           "postgres_changes",
@@ -8033,7 +8263,10 @@
             schema: "public",
             table: "comments"
           },
-          reloadComments
+          payload => scheduleRealtimeRefresh(
+            "comments",
+            () => reloadComments(payload)
+          )
         )
         .on(
           "postgres_changes",
@@ -8042,7 +8275,10 @@
             schema: "public",
             table: "comment_likes"
           },
-          reloadComments
+          payload => scheduleRealtimeRefresh(
+            "comments",
+            () => reloadComments(payload)
+          )
         )
         .on(
           "postgres_changes",
@@ -8051,7 +8287,10 @@
             schema: "public",
             table: "follows"
           },
-          reloadFollows
+          payload => scheduleRealtimeRefresh(
+            "follows",
+            () => reloadFollows(payload)
+          )
         )
         .on(
           "postgres_changes",
@@ -8060,7 +8299,10 @@
             schema: "public",
             table: "messages"
           },
-          reloadMessages
+          payload => scheduleRealtimeRefresh(
+            "messages",
+            () => reloadMessages(payload)
+          )
         )
         .on(
           "postgres_changes",
@@ -8069,7 +8311,10 @@
             schema: "public",
             table: "profiles"
           },
-          reloadProfiles
+          payload => scheduleRealtimeRefresh(
+            "profiles",
+            () => reloadProfiles(payload)
+          )
         )
         .on(
           "postgres_changes",
@@ -8078,7 +8323,10 @@
             schema: "public",
             table: "daily_joke_winners"
           },
-          reloadDailyWinners
+          payload => scheduleRealtimeRefresh(
+            "daily-winners",
+            () => reloadDailyWinners(payload)
+          )
         )
         .subscribe();
     }
@@ -8206,9 +8454,17 @@
             table: "jokes"
           },
           () => {
-            loadSharedJokes({ silent: true }).catch(error => {
-              console.error("Realtime jokes refresh error:", error);
-            });
+            scheduleRealtimeRefresh(
+              "jokes",
+              async () => {
+                await loadSharedJokes({ silent: true });
+                await Promise.all([
+                  loadReactionData(),
+                  loadCommentCounts()
+                ]);
+                renderCards();
+              }
+            );
           }
         )
         .subscribe(status => {
@@ -8224,12 +8480,43 @@
     async function initializeSharedJokes() {
       updateSharedFeedStatus("Подключение…", "loading");
       await migrateLegacyLocalJokes();
-      await loadDatabaseProfiles();
-      await loadSharedJokes();
-      await loadSocialData();
-      await initializeDailyContest();
+
+      await Promise.all([
+        loadDatabaseProfiles(),
+        loadSharedJokes()
+      ]);
+
+      await Promise.all([
+        loadReactionData(),
+        loadCommentData()
+      ]);
+
+      renderCards();
+      renderProfile();
+      renderSearchResults(searchInput.value);
+
       subscribeToSharedJokes();
       subscribeToSocialRealtime();
+
+      runWhenIdle(async () => {
+        try {
+          await Promise.all([
+            loadFollowData(),
+            loadMessagesData(),
+            initializeDailyContest()
+          ]);
+
+          renderProfile();
+          renderSearchResults(searchInput.value);
+          renderMessenger();
+          renderDailyContest();
+        } catch (error) {
+          console.error(
+            "Deferred social data error:",
+            error
+          );
+        }
+      });
     }
 
     async function publishSharedJoke(content) {
@@ -9105,16 +9392,81 @@ const myJokes = document.getElementById("myJokes");
       return data.length === 0;
     }
 
+
+    async function optimizeImageFile(
+      file,
+      maxWidth,
+      maxHeight,
+      quality = .82
+    ) {
+      if (
+        !file ||
+        !file.type.startsWith("image/") ||
+        file.type === "image/gif"
+      ) {
+        return file;
+      }
+
+      const bitmap = await createImageBitmap(file);
+      const ratio = Math.min(
+        1,
+        maxWidth / bitmap.width,
+        maxHeight / bitmap.height
+      );
+
+      if (ratio >= 1 && file.size < 700 * 1024) {
+        bitmap.close?.();
+        return file;
+      }
+
+      const width = Math.max(
+        1,
+        Math.round(bitmap.width * ratio)
+      );
+      const height = Math.max(
+        1,
+        Math.round(bitmap.height * ratio)
+      );
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const context = canvas.getContext("2d", {
+        alpha: false
+      });
+
+      context.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close?.();
+
+      const blob = await new Promise(resolve => {
+        canvas.toBlob(resolve, "image/webp", quality);
+      });
+
+      if (!blob) return file;
+
+      return new File(
+        [blob],
+        `${file.name.replace(/\.[^.]+$/, "")}.webp`,
+        { type: "image/webp" }
+      );
+    }
+
     async function uploadProfileAvatar(file) {
+      const optimizedFile = await optimizeImageFile(
+        file,
+        512,
+        512,
+        .82
+      );
       const path = `${currentAuthUser.id}/avatar`;
 
       const { error: uploadError } =
         await supabaseClient.storage
           .from("avatars")
-          .upload(path, file, {
+          .upload(path, optimizedFile, {
             upsert: true,
-            contentType: file.type,
-            cacheControl: "3600"
+            contentType: optimizedFile.type,
+            cacheControl: "31536000"
           });
 
       if (uploadError) throw uploadError;
@@ -9774,7 +10126,11 @@ function switchPage(pageName) {
 return;
       }
 
-      for (let position = 2; position >= 0; position--) {
+      for (
+        let position = CARD_STACK_SIZE - 1;
+        position >= 0;
+        position--
+      ) {
         const jokeIndex = currentIndex + position;
         if (jokeIndex < jokes.length) {
           cardArea.appendChild(createCard(jokes[jokeIndex], jokeIndex, position));
@@ -9992,7 +10348,16 @@ return;
         </section>`;
     }
 
-    searchInput.addEventListener("input", () => renderSearchResults(searchInput.value));
+    let searchRenderTimer = null;
+
+    searchInput.addEventListener("input", () => {
+      window.clearTimeout(searchRenderTimer);
+
+      searchRenderTimer = window.setTimeout(
+        () => renderSearchResults(searchInput.value),
+        MOBILE_DEVICE ? 260 : 120
+      );
+    });
 
     searchResults.addEventListener("click", event => {
       const profileOpen = event.target.closest("[data-search-profile-open]");
@@ -10225,7 +10590,7 @@ if (!ownJokes.length) {
       if (activePublicProfile) renderPublicProfile(activePublicProfile);
     }
 
-    function openJokeInProfileDialog(joke) {
+    async function openJokeInProfileDialog(joke) {
       if (typeof joke !== "string") return;
       activeJokeInDialog = joke;
       activeJokeRecord = getSharedJokeRecord(joke);
@@ -10245,8 +10610,42 @@ if (!ownJokes.length) {
       profileJokeDislikeCount.textContent = stats.dislikes;
       commentInput.value = "";
       commentSubmitButton.disabled = true;
-      renderComments();
+      commentsCountLabel.textContent = getTotalCommentCount(joke);
+      commentsList.innerHTML = `
+        <div class="comments-empty">
+          <span>⏳</span>
+          <strong>Загружаем комментарии…</strong>
+          <small>Откроются через несколько секунд.</small>
+        </div>
+      `;
       profileJokeDialog.showModal();
+
+      try {
+        await loadCommentData({
+          jokeId: activeJokeRecord?.id,
+          joke,
+          force: true
+        });
+
+        if (
+          profileJokeDialog.open &&
+          activeJokeInDialog === joke
+        ) {
+          renderComments();
+        }
+      } catch (error) {
+        console.error("Comment load error:", error);
+
+        if (profileJokeDialog.open) {
+          commentsList.innerHTML = `
+            <div class="comments-empty">
+              <span>⚠️</span>
+              <strong>Не удалось загрузить комментарии</strong>
+              <small>Проверь интернет и открой анекдот ещё раз.</small>
+            </div>
+          `;
+        }
+      }
     }
 
     function openProfileJoke(index) {
