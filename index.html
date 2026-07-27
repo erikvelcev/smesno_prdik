@@ -5647,6 +5647,19 @@
         display: none !important;
       }
 
+      .card {
+        will-change: transform, opacity;
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        contain: layout paint style;
+        transition: transform .16s ease-out, opacity .16s ease-out !important;
+      }
+
+      .card.back-1 {
+        will-change: auto;
+      }
+
       .auth-background-orb {
         filter: none !important;
         opacity: .13 !important;
@@ -6908,10 +6921,70 @@
 
     let sharedJokes = [];
     let jokes = [];
+    let searchableJokes = [];
     let sharedJokeByKey = new Map();
     let databaseProfiles = new Map();
     let sharedJokesChannel = null;
     let sharedJokesReady = false;
+
+    const FEED_LIFETIME_MS = 24 * 60 * 60 * 1000;
+    const SEEN_JOKES_STORAGE_PREFIX = "smesnoSeenJokesV1:";
+    const MAX_STORED_SEEN_JOKES = 2500;
+
+    let feedViewerId = "";
+    let seenJokeIds = new Set();
+    let feedExpiryTimer = null;
+
+    function loadSeenJokesForUser(userId) {
+      feedViewerId = String(userId || "");
+      seenJokeIds = new Set();
+
+      if (!feedViewerId) return;
+
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem(
+            `${SEEN_JOKES_STORAGE_PREFIX}${feedViewerId}`
+          ) || "[]"
+        );
+
+        if (Array.isArray(saved)) {
+          saved
+            .slice(-MAX_STORED_SEEN_JOKES)
+            .forEach(id => {
+              if (typeof id === "string" && id) {
+                seenJokeIds.add(id);
+              }
+            });
+        }
+      } catch (error) {
+        console.warn("Seen jokes storage error:", error);
+      }
+    }
+
+    function saveSeenJokes() {
+      if (!feedViewerId) return;
+
+      try {
+        const values = [...seenJokeIds]
+          .slice(-MAX_STORED_SEEN_JOKES);
+
+        localStorage.setItem(
+          `${SEEN_JOKES_STORAGE_PREFIX}${feedViewerId}`,
+          JSON.stringify(values)
+        );
+      } catch (error) {
+        console.warn("Seen jokes save error:", error);
+      }
+    }
+
+    function isFreshFeedRecord(record, now = Date.now()) {
+      const createdAt = Date.parse(record?.created_at || "");
+
+      if (!Number.isFinite(createdAt)) return false;
+
+      return createdAt > now - FEED_LIFETIME_MS;
+    }
 
     function rebuildJokeCollections() {
       sharedJokeByKey = new Map();
@@ -6925,13 +6998,14 @@
             username: record.author.username,
             display_name: record.author.display_name,
             bio: record.author.bio || "",
-            avatar_url: record.author.avatar_url || null
+            avatar_url: record.author.avatar_url || null,
+            cover_url: record.author.cover_url || null
           });
         }
       });
 
-      const uniqueTexts = [];
-      const seenTexts = new Set();
+      const allUniqueTexts = [];
+      const allSeenTexts = new Set();
 
       [
         ...sharedJokes.map(record => record.content),
@@ -6940,20 +7014,122 @@
         if (
           typeof text !== "string" ||
           !text.trim() ||
-          seenTexts.has(text)
+          allSeenTexts.has(text)
         ) {
           return;
         }
 
-        seenTexts.add(text);
-        uniqueTexts.push(text);
+        allSeenTexts.add(text);
+        allUniqueTexts.push(text);
       });
 
-      jokes = uniqueTexts;
+      searchableJokes = allUniqueTexts;
+
+      const now = Date.now();
+      const freshRecords = sharedJokes
+        .filter(record => isFreshFeedRecord(record, now))
+        .slice()
+        .sort((first, second) => {
+          const firstSeen = seenJokeIds.has(first.id) ? 1 : 0;
+          const secondSeen = seenJokeIds.has(second.id) ? 1 : 0;
+
+          if (firstSeen !== secondSeen) {
+            return firstSeen - secondSeen;
+          }
+
+          return (
+            Date.parse(second.created_at || "") -
+            Date.parse(first.created_at || "")
+          );
+        });
+
+      const feedTexts = [];
+      const feedSeenTexts = new Set();
+
+      freshRecords.forEach(record => {
+        const text = record.content;
+
+        if (
+          typeof text !== "string" ||
+          !text.trim() ||
+          feedSeenTexts.has(text)
+        ) {
+          return;
+        }
+
+        feedSeenTexts.add(text);
+        feedTexts.push(text);
+      });
+
+      jokes = feedTexts;
     }
 
     function getSharedJokeRecord(joke) {
       return sharedJokeByKey.get(jokeKey(joke)) || null;
+    }
+
+    function markJokeSeen(joke) {
+      const record = getSharedJokeRecord(joke);
+
+      if (!record?.id || seenJokeIds.has(record.id)) {
+        return;
+      }
+
+      seenJokeIds.add(record.id);
+      saveSeenJokes();
+    }
+
+    function removeExpiredJokesFromCurrentFeed() {
+      if (!jokes.length) return;
+
+      let removedBeforeCurrent = 0;
+      let changed = false;
+
+      const nextJokes = jokes.filter((joke, index) => {
+        const record = getSharedJokeRecord(joke);
+        const keep = Boolean(record && isFreshFeedRecord(record));
+
+        if (!keep) {
+          changed = true;
+
+          if (index < currentIndex) {
+            removedBeforeCurrent += 1;
+          }
+        }
+
+        return keep;
+      });
+
+      if (!changed) return;
+
+      jokes = nextJokes;
+      currentIndex = Math.max(
+        0,
+        Math.min(
+          currentIndex - removedBeforeCurrent,
+          jokes.length
+        )
+      );
+
+      updateSharedFeedStatus(
+        `${jokes.length} активных за 24 часа`,
+        "ready"
+      );
+
+      if (currentPage === "home") {
+        renderCards();
+      }
+    }
+
+    function startFeedExpiryClock() {
+      if (feedExpiryTimer) {
+        window.clearInterval(feedExpiryTimer);
+      }
+
+      feedExpiryTimer = window.setInterval(
+        removeExpiredJokesFromCurrentFeed,
+        60 * 1000
+      );
     }
 
     function getOwnJokeRecords() {
@@ -6976,6 +7152,7 @@
     let commentCountsByJokeId = new Map();
     let loadedCommentJokeIds = new Set();
     let reactionRows = [];
+    let knownReactionKeys = new Set();
     let followRows = [];
     let followedProfileIds = new Set();
     let followCounts = new Map();
@@ -7121,7 +7298,11 @@
         };
       }
 
+      const reactionKey =
+        `${jokeId}:${currentAuthUser.id}`;
+
       userVotes[key] = reaction;
+      knownReactionKeys.add(reactionKey);
 
       jokeStats[key] = {
         likes:
@@ -7149,6 +7330,7 @@
           stats: jokeStats[key]
         };
       } catch (error) {
+        knownReactionKeys.delete(reactionKey);
         delete userVotes[key];
         jokeStats[key] = stats;
         console.error("Reaction error:", error);
@@ -7695,6 +7877,7 @@
         .filter(Boolean);
 
       reactionRows = [];
+      knownReactionKeys = new Set();
       jokeStats = {};
       userVotes = {};
 
@@ -7722,7 +7905,14 @@
         ])
       );
 
+      let seenChanged = false;
+
       reactionRows.forEach(row => {
+        const reactionKey =
+          `${row.joke_id}:${row.user_id}`;
+
+        knownReactionKeys.add(reactionKey);
+
         const joke = idToText.get(row.joke_id);
         if (!joke) return;
 
@@ -7743,8 +7933,18 @@
 
         if (row.user_id === currentAuthUser?.id) {
           userVotes[key] = row.reaction;
+
+          if (!seenJokeIds.has(row.joke_id)) {
+            seenJokeIds.add(row.joke_id);
+            seenChanged = true;
+          }
         }
       });
+
+      if (seenChanged) {
+        saveSeenJokes();
+        rebuildJokeCollections();
+      }
     }
 
     async function loadCommentCounts() {
@@ -8106,14 +8306,129 @@
         );
       }
 
-      const reloadReactions = async () => {
+      const updateVisibleReactionCounters = jokeId => {
+        const joke = getJokeTextById(jokeId);
+        if (!joke) return;
+
+        const stats = getJokeStats(joke);
+
+        document.querySelectorAll(".card[data-joke-id]")
+          .forEach(card => {
+            if (card.dataset.jokeId !== jokeId) return;
+
+            const likeCount = card.querySelector(
+              ".feed-reaction.like span"
+            );
+            const dislikeCount = card.querySelector(
+              ".feed-reaction.dislike span"
+            );
+
+            if (likeCount) {
+              likeCount.textContent = stats.likes;
+            }
+
+            if (dislikeCount) {
+              dislikeCount.textContent = stats.dislikes;
+            }
+          });
+
+        if (
+          activeJokeInDialog &&
+          getJokeId(activeJokeInDialog) === jokeId
+        ) {
+          profileJokeLikeCount.textContent = stats.likes;
+          profileJokeDislikeCount.textContent = stats.dislikes;
+        }
+      };
+
+      const applyInsertedReaction = row => {
+        if (!row?.joke_id || !row?.user_id) {
+          return false;
+        }
+
+        const reactionKey =
+          `${row.joke_id}:${row.user_id}`;
+
+        if (knownReactionKeys.has(reactionKey)) {
+          return false;
+        }
+
+        const joke = getJokeTextById(row.joke_id);
+        if (!joke) return false;
+
+        knownReactionKeys.add(reactionKey);
+        reactionRows.push(row);
+
+        const key = jokeKey(joke);
+        const stats = getJokeStats(joke);
+
+        jokeStats[key] = {
+          likes:
+            stats.likes +
+            (row.reaction === "like" ? 1 : 0),
+          dislikes:
+            stats.dislikes +
+            (row.reaction === "dislike" ? 1 : 0)
+        };
+
+        if (row.user_id === currentAuthUser?.id) {
+          userVotes[key] = row.reaction;
+        }
+
+        updateVisibleReactionCounters(row.joke_id);
+        return true;
+      };
+
+      const reloadReactions = async payload => {
         try {
+          if (
+            payload?.eventType === "INSERT" &&
+            payload?.new
+          ) {
+            const changed = applyInsertedReaction(
+              payload.new
+            );
+
+            if (changed) {
+              runWhenIdle(() => {
+                renderDailyContest();
+
+                if (currentPage === "profile") {
+                  renderProfile();
+                }
+
+                if (
+                  currentPage === "publicProfile" &&
+                  activePublicProfile
+                ) {
+                  renderPublicProfile(
+                    getPublicProfile(
+                      activePublicProfile.id
+                    )
+                  );
+                }
+              }, 900);
+            }
+
+            return;
+          }
+
           await loadReactionData();
-          renderCards();
-          renderProfile();
+
+          if (currentPage === "home") {
+            renderCards();
+          }
+
+          if (currentPage === "profile") {
+            renderProfile();
+          }
+
           renderDailyContest();
 
-          if (activePublicProfile) {
+          if (
+            currentPage === "publicProfile" &&
+            activePublicProfile
+          ) {
             renderPublicProfile(
               getPublicProfile(
                 activePublicProfile.id
@@ -8251,10 +8566,17 @@
             schema: "public",
             table: "joke_reactions"
           },
-          payload => scheduleRealtimeRefresh(
-            "reactions",
-            () => reloadReactions(payload)
-          )
+          payload => {
+            if (payload?.eventType === "INSERT") {
+              reloadReactions(payload);
+              return;
+            }
+
+            scheduleRealtimeRefresh(
+              "reactions",
+              () => reloadReactions(payload)
+            );
+          }
         )
         .on(
           "postgres_changes",
@@ -8351,6 +8673,9 @@
 
     async function loadSharedJokes(options = {}) {
       const { silent = false } = options;
+      const currentJokeId = getJokeId(
+        jokes[currentIndex] || ""
+      );
 
       if (!silent) {
         updateSharedFeedStatus("Загрузка…", "loading");
@@ -8368,7 +8693,8 @@
             username,
             display_name,
             bio,
-            avatar_url
+            avatar_url,
+            cover_url
           )
         `)
         .order("created_at", { ascending: false })
@@ -8378,10 +8704,26 @@
 
       sharedJokes = (data || []).map(normalizeSharedJokeRow);
       rebuildJokeCollections();
+
+      if (currentJokeId) {
+        const restoredIndex = jokes.findIndex(
+          joke => getJokeId(joke) === currentJokeId
+        );
+
+        if (restoredIndex >= 0) {
+          currentIndex = restoredIndex;
+        } else {
+          currentIndex = Math.min(
+            currentIndex,
+            jokes.length
+          );
+        }
+      }
+
       sharedJokesReady = true;
 
       updateSharedFeedStatus(
-        `${sharedJokes.length} в общей ленте`,
+        `${jokes.length} активных за 24 часа`,
         "ready"
       );
 
@@ -8470,7 +8812,7 @@
         .subscribe(status => {
           if (status === "SUBSCRIBED") {
             updateSharedFeedStatus(
-              `${sharedJokes.length} в общей ленте`,
+              `${jokes.length} активных за 24 часа`,
               "ready"
             );
           }
@@ -8497,6 +8839,7 @@
 
       subscribeToSharedJokes();
       subscribeToSocialRealtime();
+      startFeedExpiryClock();
 
       runWhenIdle(async () => {
         try {
@@ -8966,6 +9309,8 @@ const myJokes = document.getElementById("myJokes");
     function applyAuthenticatedProfile(user, profile) {
       currentAuthUser = user;
       currentDatabaseProfile = profile;
+      loadSeenJokesForUser(user.id);
+      rebuildJokeCollections();
 
       const name =
         profile?.display_name ||
@@ -9250,10 +9595,17 @@ const myJokes = document.getElementById("myJokes");
           dailyContestClockTimer = null;
         }
 
+        if (feedExpiryTimer) {
+          window.clearInterval(feedExpiryTimer);
+          feedExpiryTimer = null;
+        }
+
         const { error } = await supabaseClient.auth.signOut();
         if (error) throw error;
 
         sharedJokes = [];
+        feedViewerId = "";
+        seenJokeIds = new Set();
         rebuildJokeCollections();
         closeSettings();
         showAuthGate("login");
@@ -9866,6 +10218,8 @@ function switchPage(pageName) {
       if (position === 2) card.classList.add("back-2");
 
       const sharedRecord = getSharedJokeRecord(joke);
+      card.dataset.jokeId = sharedRecord?.id || "";
+
       const isOwnShared =
         Boolean(
           sharedRecord &&
@@ -10141,50 +10495,85 @@ return;
     function enableSwipe(card) {
       let startX = 0;
       let currentX = 0;
+      let pendingX = 0;
       let dragging = false;
+      let frameId = 0;
+
+      const likeStamp = card.querySelector(".stamp.like");
+      const skipStamp = card.querySelector(".stamp.skip");
+
+      function paintSwipe() {
+        frameId = 0;
+        currentX = pendingX;
+
+        const rotation = currentX / 20;
+        card.style.transform =
+          `translate3d(${currentX}px,0,0) rotate(${rotation}deg)`;
+
+        const strength = Math.min(
+          Math.abs(currentX) / 120,
+          1
+        );
+
+        likeStamp.style.opacity =
+          currentX < 0 ? strength : 0;
+        skipStamp.style.opacity =
+          currentX > 0 ? strength : 0;
+      }
+
+      function requestPaint() {
+        if (frameId) return;
+        frameId = window.requestAnimationFrame(paintSwipe);
+      }
 
       function startSwipe(clientX) {
         dragging = true;
         startX = clientX;
+        currentX = 0;
+        pendingX = 0;
         card.style.transition = "none";
       }
 
       function moveSwipe(clientX) {
         if (!dragging) return;
 
-        currentX = clientX - startX;
-        const rotation = currentX / 18;
-        card.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
-
-        const strength = Math.min(Math.abs(currentX) / 120, 1);
-        const likeStamp = card.querySelector(".stamp.like");
-        const skipStamp = card.querySelector(".stamp.skip");
-
-        likeStamp.style.opacity = currentX < 0 ? strength : 0;
-        skipStamp.style.opacity = currentX > 0 ? strength : 0;
+        pendingX = clientX - startX;
+        requestPaint();
       }
 
       function endSwipe() {
         if (!dragging) return;
 
         dragging = false;
-        card.style.transition = "transform .25s ease, opacity .25s ease";
 
-        if (currentX < -110) {
+        if (frameId) {
+          window.cancelAnimationFrame(frameId);
+          frameId = 0;
+          paintSwipe();
+        }
+
+        card.style.transition =
+          "transform .16s ease-out, opacity .16s ease-out";
+
+        if (currentX < -105) {
           finishSwipe("like", card);
-        } else if (currentX > 110) {
+        } else if (currentX > 105) {
           finishSwipe("skip", card);
         } else {
           card.style.transform = "";
-          card.querySelectorAll(".stamp").forEach(stamp => {
-            stamp.style.opacity = 0;
-          });
+          likeStamp.style.opacity = 0;
+          skipStamp.style.opacity = 0;
         }
 
         currentX = 0;
+        pendingX = 0;
       }
 
       card.addEventListener("pointerdown", event => {
+        if (card.dataset.swipeFinishing === "true") {
+          return;
+        }
+
         card.setPointerCapture(event.pointerId);
         startSwipe(event.clientX);
       });
@@ -10197,8 +10586,15 @@ return;
       card.addEventListener("pointercancel", endSwipe);
     }
 
-    async function finishSwipe(action, card) {
-      if (currentIndex >= jokes.length) return;
+    function finishSwipe(action, card) {
+      if (
+        currentIndex >= jokes.length ||
+        card.dataset.swipeFinishing === "true"
+      ) {
+        return;
+      }
+
+      card.dataset.swipeFinishing = "true";
 
       const currentJoke = jokes[currentIndex];
       const reaction =
@@ -10206,32 +10602,66 @@ return;
           ? "like"
           : "dislike";
 
-      const votePromise =
-        registerVote(
-          currentJoke,
-          reaction
-        );
+      markJokeSeen(currentJoke);
+
+      const votePromise = registerVote(
+        currentJoke,
+        reaction
+      );
+
+      card.style.transition =
+        "transform .16s ease-out, opacity .16s ease-out";
 
       if (action === "like") {
         card.style.transform =
-          "translateX(-140%) rotate(-22deg)";
+          "translate3d(-145%,0,0) rotate(-18deg)";
       } else {
         card.style.transform =
-          "translateX(140%) rotate(22deg)";
+          "translate3d(145%,0,0) rotate(18deg)";
       }
 
       card.style.opacity = "0";
 
-      await votePromise;
-
       window.setTimeout(() => {
-        currentIndex++;
+        currentIndex += 1;
         renderCards();
-        renderProfile();
-      }, 220);
+      }, MOBILE_DEVICE ? 105 : 145);
+
+      votePromise
+        .then(result => {
+          if (result?.error) {
+            scheduleRealtimeRefresh(
+              "reaction-resync",
+              async () => {
+                await loadReactionData();
+
+                if (currentPage === "home") {
+                  renderCards();
+                }
+              },
+              1100
+            );
+          }
+        })
+        .catch(error => {
+          console.error("Reaction save error:", error);
+        });
+
+      scheduleRealtimeRefresh(
+        "swipe-surfaces",
+        async () => {
+          renderDailyContest();
+
+          if (currentPage === "profile") {
+            renderProfile();
+          }
+        },
+        MOBILE_DEVICE ? 900 : 500
+      );
     }
 
     function resetApp() {
+      rebuildJokeCollections();
       currentIndex = 0;
       renderCards();
     }
@@ -10301,8 +10731,12 @@ return;
           .includes(normalizedQuery);
       });
       const jokeList = normalizedQuery
-        ? jokes.filter(joke => joke.toLocaleLowerCase("ru-RU").includes(normalizedQuery))
-        : jokes.slice(0, 18);
+        ? searchableJokes.filter(joke =>
+            joke
+              .toLocaleLowerCase("ru-RU")
+              .includes(normalizedQuery)
+          )
+        : searchableJokes.slice(0, 18);
 
       const peopleHtml = people.length
         ? people.slice(0, normalizedQuery ? 20 : 8).map(profile => {
@@ -10373,7 +10807,7 @@ return;
       }
       if (profileOpen) return openPublicProfile(profileOpen.dataset.searchProfileOpen, "search");
       if (jokeCard) {
-        const joke = jokes.find(item => jokeKey(item) === jokeCard.dataset.searchJokeKey);
+        const joke = searchableJokes.find(item => jokeKey(item) === jokeCard.dataset.searchJokeKey);
         if (joke) openJokeInProfileDialog(joke);
       }
     });
@@ -10382,7 +10816,7 @@ return;
       const jokeCard = event.target.closest("[data-search-joke-key]");
       if (!jokeCard || (event.key !== "Enter" && event.key !== " ")) return;
       event.preventDefault();
-      const joke = jokes.find(item => jokeKey(item) === jokeCard.dataset.searchJokeKey);
+      const joke = searchableJokes.find(item => jokeKey(item) === jokeCard.dataset.searchJokeKey);
       if (joke) openJokeInProfileDialog(joke);
     });
 
