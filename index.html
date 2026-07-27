@@ -5678,6 +5678,61 @@
       }
     }
 
+  
+
+    /* Быстрый свайп и отправка из окна полного просмотра */
+    .profile-joke-share-button {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      margin-right: auto;
+      padding: 0;
+      border: 1px solid rgba(112,80,255,.20);
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      background: rgba(112,80,255,.10);
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .profile-joke-share-button:hover {
+      background: rgba(112,80,255,.16);
+    }
+
+    .profile-joke-share-button:active {
+      transform: scale(.96);
+    }
+
+    .profile-joke-share-button[hidden] {
+      display: none !important;
+    }
+
+    .profile-joke-share-button svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    @media (max-width: 768px),
+           (hover: none) and (pointer: coarse) {
+      .card {
+        transition: transform .09s linear, opacity .09s linear !important;
+      }
+
+      .profile-joke-share-button {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+      }
+    }
+
   </style>
 </head>
 <body class="auth-locked">
@@ -6577,7 +6632,19 @@
         </button>
       </div>
 
-      <div class="profile-joke-modal-reactions" aria-label="Оценки анекдота">
+      <div class="profile-joke-modal-reactions" aria-label="Действия с анекдотом">
+        <button
+          id="profileJokeShareButton"
+          class="profile-joke-share-button"
+          type="button"
+          aria-label="Отправить анекдот"
+          title="Отправить"
+        >
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M4.5 5.5L28 16L4.5 26.5L9 18.2L20.2 16L9 13.8L4.5 5.5Z"></path>
+          </svg>
+        </button>
+
         <span class="reaction-chip like-count" title="Понравилось">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7 10v11H3V10h4Z"></path>
@@ -6962,8 +7029,15 @@
       }
     }
 
-    function saveSeenJokes() {
+    let seenJokesSaveTimer = null;
+
+    function persistSeenJokesNow() {
       if (!feedViewerId) return;
+
+      if (seenJokesSaveTimer) {
+        window.clearTimeout(seenJokesSaveTimer);
+        seenJokesSaveTimer = null;
+      }
 
       try {
         const values = [...seenJokeIds]
@@ -6977,6 +7051,27 @@
         console.warn("Seen jokes save error:", error);
       }
     }
+
+    function saveSeenJokes() {
+      if (!feedViewerId) return;
+
+      if (seenJokesSaveTimer) {
+        window.clearTimeout(seenJokesSaveTimer);
+      }
+
+      seenJokesSaveTimer = window.setTimeout(() => {
+        seenJokesSaveTimer = null;
+        runWhenIdle(persistSeenJokesNow, 900);
+      }, MOBILE_DEVICE ? 700 : 350);
+    }
+
+    window.addEventListener("pagehide", persistSeenJokesNow);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        persistSeenJokesNow();
+      }
+    });
 
     function isFreshFeedRecord(record, now = Date.now()) {
       const createdAt = Date.parse(record?.created_at || "");
@@ -8977,6 +9072,7 @@ const myJokes = document.getElementById("myJokes");
     const profileJokeFullText = document.getElementById("profileJokeFullText");
     const profileJokeLikeCount = document.getElementById("profileJokeLikeCount");
     const profileJokeDislikeCount = document.getElementById("profileJokeDislikeCount");
+    const profileJokeShareButton = document.getElementById("profileJokeShareButton");
     const ownJokeActions = document.getElementById("ownJokeActions");
     const editJokeButton = document.getElementById("editJokeButton");
     const deleteJokeButton = document.getElementById("deleteJokeButton");
@@ -10492,7 +10588,63 @@ return;
       }
 }
 
+    function advanceCardStack(swipedCard) {
+      currentIndex += 1;
+      swipedCard.remove();
+
+      if (currentIndex >= jokes.length) {
+        renderCards();
+        return;
+      }
+
+      const remainingCards = [
+        ...cardArea.querySelectorAll(".card")
+      ];
+
+      let nextFrontCard = null;
+
+      remainingCards.forEach(card => {
+        if (card.classList.contains("back-1")) {
+          card.classList.remove("back-1");
+          nextFrontCard = card;
+          return;
+        }
+
+        if (card.classList.contains("back-2")) {
+          card.classList.remove("back-2");
+          card.classList.add("back-1");
+        }
+      });
+
+      if (!nextFrontCard) {
+        renderCards();
+        return;
+      }
+
+      nextFrontCard.style.transition = "";
+      nextFrontCard.style.transform = "";
+      nextFrontCard.style.opacity = "";
+      nextFrontCard.dataset.swipeFinishing = "false";
+      enableSwipe(nextFrontCard);
+
+      const newBackPosition = CARD_STACK_SIZE - 1;
+      const newBackIndex = currentIndex + newBackPosition;
+
+      if (newBackIndex < jokes.length) {
+        const newBackCard = createCard(
+          jokes[newBackIndex],
+          newBackIndex,
+          newBackPosition
+        );
+
+        cardArea.prepend(newBackCard);
+      }
+    }
+
     function enableSwipe(card) {
+      if (card.dataset.swipeEnabled === "true") return;
+      card.dataset.swipeEnabled = "true";
+
       let startX = 0;
       let currentX = 0;
       let pendingX = 0;
@@ -10553,7 +10705,9 @@ return;
         }
 
         card.style.transition =
-          "transform .16s ease-out, opacity .16s ease-out";
+          MOBILE_DEVICE
+          ? "transform .09s linear, opacity .09s linear"
+          : "transform .14s ease-out, opacity .14s ease-out";
 
         if (currentX < -105) {
           finishSwipe("like", card);
@@ -10610,7 +10764,9 @@ return;
       );
 
       card.style.transition =
-        "transform .16s ease-out, opacity .16s ease-out";
+        MOBILE_DEVICE
+          ? "transform .09s linear, opacity .09s linear"
+          : "transform .14s ease-out, opacity .14s ease-out";
 
       if (action === "like") {
         card.style.transform =
@@ -10623,9 +10779,8 @@ return;
       card.style.opacity = "0";
 
       window.setTimeout(() => {
-        currentIndex += 1;
-        renderCards();
-      }, MOBILE_DEVICE ? 105 : 145);
+        advanceCardStack(card);
+      }, MOBILE_DEVICE ? 48 : 105);
 
       votePromise
         .then(result => {
@@ -11038,6 +11193,7 @@ if (!ownJokes.length) {
         );
 
       ownJokeActions.hidden = !isOwnJoke;
+      profileJokeShareButton.hidden = !activeJokeRecord?.id;
       const stats = getJokeStats(joke);
       profileJokeFullText.textContent = joke;
       profileJokeLikeCount.textContent = stats.likes;
@@ -11417,6 +11573,19 @@ if (!ownJokes.length) {
         deleteJokeButton.disabled = false;
         deleteJokeButton.textContent = "Удалить";
       }
+    });
+
+    profileJokeShareButton.addEventListener("click", () => {
+      if (
+        !activeJokeInDialog ||
+        !getJokeId(activeJokeInDialog)
+      ) {
+        return;
+      }
+
+      const jokeToShare = activeJokeInDialog;
+      profileJokeDialog.close();
+      openFeedShareDialog(jokeToShare);
     });
 
     profileJokeClose.addEventListener("click", () => {
