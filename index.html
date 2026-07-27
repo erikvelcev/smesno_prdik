@@ -5733,6 +5733,169 @@
       }
     }
 
+  
+
+    /* Окно подтверждения электронной почты после регистрации */
+    .email-confirm-dialog {
+      width: min(92vw, 430px);
+      max-width: 430px;
+      padding: 0;
+      border: 0;
+      border-radius: 28px;
+      color: var(--text);
+      background: transparent;
+      overflow: visible;
+    }
+
+    .email-confirm-dialog::backdrop {
+      background: rgba(10, 8, 18, .78);
+    }
+
+    .email-confirm-card {
+      padding: 26px 22px 22px;
+      border: 1px solid rgba(112, 80, 255, .22);
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: 0 24px 65px rgba(12, 8, 28, .35);
+      text-align: center;
+    }
+
+    .email-confirm-icon {
+      width: 74px;
+      height: 74px;
+      margin: 0 auto 16px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), #bd57ef);
+      box-shadow: 0 14px 30px rgba(112, 80, 255, .25);
+    }
+
+    .email-confirm-icon svg {
+      width: 38px;
+      height: 38px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .email-confirm-card h2 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.15;
+    }
+
+    .email-confirm-description {
+      margin: 10px 0 14px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .email-confirm-address {
+      margin: 0 0 16px;
+      padding: 11px 13px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--primary);
+      background: rgba(112, 80, 255, .08);
+      font-size: 13px;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .email-confirm-steps {
+      margin: 0 0 18px;
+      padding: 0;
+      display: grid;
+      gap: 9px;
+      list-style: none;
+      text-align: left;
+    }
+
+    .email-confirm-steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .email-confirm-step-number {
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      background: rgba(112, 80, 255, .11);
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .email-confirm-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .email-confirm-primary,
+    .email-confirm-secondary {
+      min-height: 50px;
+      padding: 0 16px;
+      border-radius: 16px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .email-confirm-primary {
+      border: 0;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), #b45cf0);
+      box-shadow: 0 12px 24px rgba(112, 80, 255, .20);
+    }
+
+    .email-confirm-secondary {
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: var(--surface-2);
+    }
+
+    .email-confirm-primary:active,
+    .email-confirm-secondary:active {
+      transform: scale(.98);
+    }
+
+    .email-confirm-note {
+      margin: 13px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    html[data-theme="dark"] .email-confirm-card {
+      background: #181522;
+    }
+
+    @media (max-width: 480px) {
+      .email-confirm-card {
+        padding: 23px 18px 19px;
+        border-radius: 24px;
+      }
+
+      .email-confirm-dialog {
+        width: min(93vw, 430px);
+      }
+    }
+
   </style>
 </head>
 <body class="auth-locked">
@@ -5947,6 +6110,66 @@
       </p>
     </section>
   </div>
+
+
+
+  <dialog
+    id="emailConfirmDialog"
+    class="email-confirm-dialog"
+    aria-labelledby="emailConfirmTitle"
+  >
+    <div class="email-confirm-card">
+      <div class="email-confirm-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+          <path d="m4.5 7 7.5 5.5L19.5 7"></path>
+          <path d="m16.7 16.6 1.5 1.5 3-3.2"></path>
+        </svg>
+      </div>
+
+      <h2 id="emailConfirmTitle">Проверь Gmail</h2>
+
+      <p class="email-confirm-description">
+        Мы отправили письмо для подтверждения аккаунта на:
+      </p>
+
+      <p id="emailConfirmAddress" class="email-confirm-address"></p>
+
+      <ol class="email-confirm-steps">
+        <li>
+          <span class="email-confirm-step-number">1</span>
+          <span>Открой входящие письма и найди письмо подтверждения.</span>
+        </li>
+        <li>
+          <span class="email-confirm-step-number">2</span>
+          <span>Нажми в письме кнопку или ссылку подтверждения.</span>
+        </li>
+        <li>
+          <span class="email-confirm-step-number">3</span>
+          <span>Вернись на сайт и войди с указанным паролем.</span>
+        </li>
+      </ol>
+
+      <div class="email-confirm-actions">
+        <button
+          id="openGmailButton"
+          class="email-confirm-primary"
+          type="button"
+        >Открыть Gmail</button>
+
+        <button
+          id="emailConfirmDoneButton"
+          class="email-confirm-secondary"
+          type="button"
+        >Перейти ко входу</button>
+      </div>
+
+      <p class="email-confirm-note">
+        Письма нет? Проверь папки «Спам» и «Промоакции» и подожди несколько минут.
+      </p>
+    </div>
+  </dialog>
+
 
   <div class="app">
     <header class="app-header">
@@ -9000,6 +9223,11 @@
     const recoveryPasswordConfirm = document.getElementById("recoveryPasswordConfirm");
     const recoverySubmit = document.getElementById("recoverySubmit");
     const authStatus = document.getElementById("authStatus");
+    const emailConfirmDialog = document.getElementById("emailConfirmDialog");
+    const emailConfirmTitle = document.getElementById("emailConfirmTitle");
+    const emailConfirmAddress = document.getElementById("emailConfirmAddress");
+    const openGmailButton = document.getElementById("openGmailButton");
+    const emailConfirmDoneButton = document.getElementById("emailConfirmDoneButton");
     const signOutButton = document.getElementById("signOutButton");
     const ownProfileCard = document.getElementById("ownProfileCard");
     const ownProfileCover = document.getElementById("ownProfileCover");
@@ -9278,6 +9506,37 @@ const myJokes = document.getElementById("myJokes");
       return (text[0] || "Я").toLocaleUpperCase("ru-RU");
     }
 
+    function showEmailConfirmDialog(email) {
+      const normalizedEmail = String(email || "").trim();
+      const isGmail = /@gmail\.com$/i.test(normalizedEmail);
+
+      emailConfirmTitle.textContent = isGmail
+        ? "Проверь Gmail"
+        : "Проверь электронную почту";
+
+      emailConfirmAddress.textContent = normalizedEmail;
+      openGmailButton.hidden = !isGmail;
+
+      if (typeof emailConfirmDialog.showModal === "function") {
+        if (!emailConfirmDialog.open) {
+          emailConfirmDialog.showModal();
+        }
+      } else {
+        alert(
+          `Аккаунт создан. Проверь почту ${normalizedEmail} и подтверди регистрацию.`
+        );
+      }
+    }
+
+    function closeEmailConfirmDialog() {
+      if (emailConfirmDialog.open) {
+        emailConfirmDialog.close();
+      }
+
+      switchAuthView("login");
+      loginEmail.focus();
+    }
+
     function setAuthStatus(message, type = "info") {
       authStatus.textContent = message;
       authStatus.dataset.type = type;
@@ -9461,6 +9720,25 @@ const myJokes = document.getElementById("myJokes");
       }
     }
 
+    openGmailButton.addEventListener("click", () => {
+      window.open(
+        "https://mail.google.com/mail/u/0/#inbox",
+        "_blank",
+        "noopener,noreferrer"
+      );
+    });
+
+    emailConfirmDoneButton.addEventListener(
+      "click",
+      closeEmailConfirmDialog
+    );
+
+    emailConfirmDialog.addEventListener("click", event => {
+      if (event.target === emailConfirmDialog) {
+        closeEmailConfirmDialog();
+      }
+    });
+
     authTabs.addEventListener("click", event => {
       const button = event.target.closest("[data-auth-view]");
       if (!button) return;
@@ -9518,6 +9796,7 @@ const myJokes = document.getElementById("myJokes");
 
       const username = normalizeUsername(registerUsername.value);
       const displayName = registerName.value.trim();
+      const registrationEmail = registerEmail.value.trim();
       const password = registerPassword.value;
       const passwordConfirm = registerPasswordConfirm.value;
 
@@ -9555,7 +9834,7 @@ const myJokes = document.getElementById("myJokes");
             : window.location.origin + window.location.pathname;
 
         const { data, error } = await supabaseClient.auth.signUp({
-          email: registerEmail.value.trim(),
+          email: registrationEmail,
           password,
           options: {
             emailRedirectTo: redirectTo,
@@ -9574,11 +9853,12 @@ const myJokes = document.getElementById("myJokes");
           await handleAuthenticatedSession(data.session);
         } else {
           switchAuthView("login");
+          loginEmail.value = registrationEmail;
           setAuthStatus(
-            "Аккаунт создан. Проверь почту и перейди по ссылке подтверждения, затем войди.",
+            "Аккаунт создан. Подтверди электронную почту, затем войди.",
             "success"
           );
-          loginEmail.value = registerEmail.value.trim();
+          showEmailConfirmDialog(registrationEmail);
         }
       } catch (error) {
         setAuthStatus(authErrorMessage(error), "error");
