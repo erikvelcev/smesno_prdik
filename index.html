@@ -8767,6 +8767,114 @@
       }
     }
 
+    async function reloadAccountVisibility(payload = null) {
+      if (!currentAuthUser) return;
+
+      const changedRow =
+        payload?.new ||
+        payload?.old ||
+        null;
+
+      const changedUserId =
+        changedRow?.user_id || null;
+
+      const isHidden =
+        changedRow?.is_hidden === true;
+
+      if (changedUserId && isHidden) {
+        databaseProfiles.delete(changedUserId);
+
+        sharedJokes = sharedJokes.filter(
+          record => record.author_id !== changedUserId
+        );
+
+        reactionRows = reactionRows.filter(
+          row => row.user_id !== changedUserId
+        );
+
+        followRows = followRows.filter(
+          row =>
+            row.follower_id !== changedUserId &&
+            row.following_id !== changedUserId
+        );
+
+        followedProfileIds.delete(changedUserId);
+
+        const hiddenContactIndex =
+          messengerContacts.findIndex(
+            contact => contact.id === changedUserId
+          );
+
+        if (hiddenContactIndex >= 0) {
+          messengerContacts.splice(
+            hiddenContactIndex,
+            1
+          );
+        }
+
+        delete messengerStore[changedUserId];
+        unreadByContact.delete(changedUserId);
+
+        if (activeContactId === changedUserId) {
+          activeContactId =
+            messengerContacts[0]?.id || null;
+
+          if (activeContactId) {
+            localStorage.setItem(
+              "activeMessengerContact",
+              activeContactId
+            );
+          } else {
+            localStorage.removeItem(
+              "activeMessengerContact"
+            );
+          }
+        }
+
+        if (
+          activePublicProfile?.id ===
+          changedUserId
+        ) {
+          activePublicProfile = null;
+          switchPage("search");
+        }
+
+        rebuildJokeCollections();
+      }
+
+      await Promise.all([
+        loadDatabaseProfiles(),
+        loadSharedJokes({ silent: true }),
+        loadReactionData(),
+        loadFollowData(),
+        loadMessagesData(),
+        loadCommentCounts(),
+        loadDailyContestData()
+      ]);
+
+      renderCards();
+      renderProfile();
+      renderSearchResults(searchInput.value);
+      renderMessenger();
+      renderDailyContest();
+
+      if (activePublicProfile) {
+        const refreshedProfile =
+          getPublicProfile(
+            activePublicProfile.id
+          );
+
+        if (refreshedProfile) {
+          renderPublicProfile(
+            refreshedProfile
+          );
+        } else {
+          activePublicProfile = null;
+          switchPage("search");
+        }
+      }
+    }
+
     function subscribeToSocialRealtime() {
       if (socialRealtimeChannel) {
         supabaseClient.removeChannel(
@@ -9116,6 +9224,19 @@
           payload => scheduleRealtimeRefresh(
             "daily-winners",
             () => reloadDailyWinners(payload)
+          )
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "smesno_visibility_events"
+          },
+          payload => scheduleRealtimeRefresh(
+            "account-visibility",
+            () => reloadAccountVisibility(payload),
+            120
           )
         )
         .subscribe();
@@ -9560,7 +9681,36 @@ const myJokes = document.getElementById("myJokes");
         .maybeSingle();
 
       if (error) throw error;
-      if (!data) return null;
+
+      if (!data) {
+        databaseProfiles.delete(profileId);
+
+        const contactIndex = messengerContacts.findIndex(
+          contact => contact.id === profileId
+        );
+
+        if (contactIndex >= 0) {
+          messengerContacts.splice(contactIndex, 1);
+        }
+
+        if (activeContactId === profileId) {
+          activeContactId =
+            messengerContacts[0]?.id || null;
+
+          if (activeContactId) {
+            localStorage.setItem(
+              "activeMessengerContact",
+              activeContactId
+            );
+          } else {
+            localStorage.removeItem(
+              "activeMessengerContact"
+            );
+          }
+        }
+
+        return null;
+      }
 
       const normalizedProfile = {
         id: data.id,
@@ -10468,9 +10618,31 @@ const myJokes = document.getElementById("myJokes");
     });
 
 
+    let visibilityFocusRefreshAt = 0;
+
+    function refreshVisibilityAfterFocus() {
+      const now = Date.now();
+
+      if (
+        now - visibilityFocusRefreshAt <
+        15000
+      ) {
+        return;
+      }
+
+      visibilityFocusRefreshAt = now;
+
+      scheduleRealtimeRefresh(
+        "visibility-focus",
+        () => reloadAccountVisibility(),
+        220
+      );
+    }
+
     window.addEventListener("focus", () => {
       refreshVisibleProfileCovers();
       verifyCurrentBanStatus();
+      refreshVisibilityAfterFocus();
     });
 
     document.addEventListener(
@@ -10478,6 +10650,7 @@ const myJokes = document.getElementById("myJokes");
       () => {
         if (document.visibilityState === "visible") {
           refreshVisibleProfileCovers();
+          refreshVisibilityAfterFocus();
         }
       }
     );
@@ -12513,7 +12686,14 @@ if (!ownJokes.length) {
       }
 
       const profile = getPublicProfile(profileId);
-      if (!profile) return;
+
+      if (!profile) {
+        activePublicProfile = null;
+        renderSearchResults(
+          searchInput.value
+        );
+        return;
+      }
 
       publicProfileReturnPage =
         returnPage === "publicProfile"
