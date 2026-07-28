@@ -5896,6 +5896,128 @@
       }
     }
 
+
+    /* Регистрация: защита от повторных запросов */
+    .email-confirm-resend {
+      width: 100%;
+      min-height: 48px;
+      padding: 0 16px;
+      border: 1px solid rgba(112, 80, 255, .20);
+      border-radius: 16px;
+      color: var(--primary);
+      background: rgba(112, 80, 255, .08);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .email-confirm-resend:disabled {
+      opacity: .52;
+      cursor: not-allowed;
+    }
+
+    .email-confirm-cooldown {
+      margin: 9px 0 0;
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .email-confirm-cooldown[hidden] {
+      display: none;
+    }
+
+    /* Экран заблокированного аккаунта */
+    .ban-gate {
+      position: fixed;
+      z-index: 10020;
+      inset: 0;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+      overflow-y: auto;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(147, 96, 255, .24), transparent 34%),
+        radial-gradient(circle at 82% 82%, rgba(255, 82, 143, .18), transparent 32%),
+        #f4f1ff;
+    }
+
+    .ban-gate[hidden] {
+      display: none;
+    }
+
+    .ban-card {
+      width: min(92vw, 470px);
+      padding: 30px 24px 25px;
+      border: 1px solid rgba(112, 80, 255, .14);
+      border-radius: 30px;
+      color: var(--text);
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 24px 70px rgba(46, 30, 90, .22);
+      text-align: center;
+    }
+
+    .ban-icon {
+      width: 74px;
+      height: 74px;
+      margin: 0 auto 18px;
+      border-radius: 25px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, #e14b72, #8e54ff);
+      box-shadow: 0 16px 32px rgba(151, 70, 134, .25);
+      font-size: 34px;
+      font-weight: 950;
+    }
+
+    .ban-card h2 {
+      margin: 0;
+      font-size: clamp(24px, 7vw, 32px);
+    }
+
+    .ban-card > p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .ban-reason-box {
+      margin: 19px 0;
+      padding: 15px;
+      border: 1px solid rgba(218, 70, 105, .18);
+      border-radius: 18px;
+      color: #9f294d;
+      background: rgba(218, 70, 105, .08);
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .ban-card button {
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      border-radius: 17px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), #ad62ef);
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    html[data-theme="dark"] .ban-gate {
+      background:
+        radial-gradient(circle at 18% 18%, rgba(147, 96, 255, .18), transparent 34%),
+        radial-gradient(circle at 82% 82%, rgba(255, 82, 143, .13), transparent 32%),
+        #0d0b13;
+    }
+
+    html[data-theme="dark"] .ban-card {
+      background: #181522;
+    }
+
   </style>
 </head>
 <body class="auth-locked">
@@ -6112,6 +6234,22 @@
   </div>
 
 
+  <div id="banGate" class="ban-gate" hidden>
+    <section class="ban-card" aria-labelledby="banTitle">
+      <div class="ban-icon" aria-hidden="true">!</div>
+      <h2 id="banTitle">Аккаунт заблокирован</h2>
+      <p>
+        Доступ к публикациям, реакциям, комментариям и сообщениям временно закрыт администратором.
+      </p>
+      <div id="banReasonText" class="ban-reason-box">
+        Причина не указана.
+      </div>
+      <button id="banSignOutButton" type="button">
+        Выйти из аккаунта
+      </button>
+    </section>
+  </div>
+
 
   <dialog
     id="emailConfirmDialog"
@@ -6129,7 +6267,7 @@
 
       <h2 id="emailConfirmTitle">Проверь Gmail</h2>
 
-      <p class="email-confirm-description">
+      <p id="emailConfirmDescription" class="email-confirm-description">
         Мы отправили письмо для подтверждения аккаунта на:
       </p>
 
@@ -6163,6 +6301,18 @@
           type="button"
         >Перейти ко входу</button>
       </div>
+
+      <button
+        id="resendConfirmationButton"
+        class="email-confirm-resend"
+        type="button"
+      >Отправить письмо ещё раз</button>
+
+      <p
+        id="emailConfirmCooldown"
+        class="email-confirm-cooldown"
+        hidden
+      ></p>
 
       <p class="email-confirm-note">
         Письма нет? Проверь папки «Спам» и «Промоакции» и подожди несколько минут.
@@ -9202,6 +9352,13 @@
     let currentPage = "home";
     let currentAuthUser = null;
     let currentDatabaseProfile = null;
+    let registrationRequestInFlight = false;
+    let registrationCooldownTimer = null;
+    let pendingRegistrationEmail = "";
+    let banStatusTimer = null;
+
+    const REGISTRATION_COOLDOWN_MS = 60 * 1000;
+    const REGISTRATION_COOLDOWN_KEY = "smesnoRegistrationCooldownV1";
 
     const authGate = document.getElementById("authGate");
     const authTabs = document.getElementById("authTabs");
@@ -9225,9 +9382,15 @@
     const authStatus = document.getElementById("authStatus");
     const emailConfirmDialog = document.getElementById("emailConfirmDialog");
     const emailConfirmTitle = document.getElementById("emailConfirmTitle");
+    const emailConfirmDescription = document.getElementById("emailConfirmDescription");
     const emailConfirmAddress = document.getElementById("emailConfirmAddress");
     const openGmailButton = document.getElementById("openGmailButton");
     const emailConfirmDoneButton = document.getElementById("emailConfirmDoneButton");
+    const resendConfirmationButton = document.getElementById("resendConfirmationButton");
+    const emailConfirmCooldown = document.getElementById("emailConfirmCooldown");
+    const banGate = document.getElementById("banGate");
+    const banReasonText = document.getElementById("banReasonText");
+    const banSignOutButton = document.getElementById("banSignOutButton");
     const signOutButton = document.getElementById("signOutButton");
     const ownProfileCard = document.getElementById("ownProfileCard");
     const ownProfileCover = document.getElementById("ownProfileCover");
@@ -9506,16 +9669,122 @@ const myJokes = document.getElementById("myJokes");
       return (text[0] || "Я").toLocaleUpperCase("ru-RU");
     }
 
-    function showEmailConfirmDialog(email) {
+    function getAuthRedirectUrl() {
+      return window.location.protocol === "file:"
+        ? undefined
+        : window.location.origin + window.location.pathname;
+    }
+
+    function readRegistrationCooldown() {
+      try {
+        const stored = JSON.parse(
+          localStorage.getItem(REGISTRATION_COOLDOWN_KEY) || "null"
+        );
+
+        if (!stored?.email || !Number.isFinite(stored?.until)) {
+          return null;
+        }
+
+        return stored;
+      } catch {
+        return null;
+      }
+    }
+
+    function rememberRegistrationCooldown(email, duration = REGISTRATION_COOLDOWN_MS) {
+      const value = {
+        email: String(email || "").trim().toLowerCase(),
+        until: Date.now() + duration
+      };
+
+      try {
+        localStorage.setItem(
+          REGISTRATION_COOLDOWN_KEY,
+          JSON.stringify(value)
+        );
+      } catch {}
+
+      return value;
+    }
+
+    function getRegistrationCooldownSeconds(email = pendingRegistrationEmail) {
+      const stored = readRegistrationCooldown();
+      const normalizedEmail = String(email || "").trim().toLowerCase();
+
+      if (!stored || stored.email !== normalizedEmail) return 0;
+
+      return Math.max(
+        0,
+        Math.ceil((stored.until - Date.now()) / 1000)
+      );
+    }
+
+    function refreshRegistrationCooldownUi() {
+      const seconds = getRegistrationCooldownSeconds();
+      const coolingDown = seconds > 0;
+
+      resendConfirmationButton.disabled = coolingDown;
+      emailConfirmCooldown.hidden = !coolingDown;
+      emailConfirmCooldown.textContent = coolingDown
+        ? `Повторная отправка будет доступна через ${seconds} сек.`
+        : "";
+
+      if (!coolingDown && registrationCooldownTimer) {
+        window.clearInterval(registrationCooldownTimer);
+        registrationCooldownTimer = null;
+      }
+    }
+
+    function startRegistrationCooldownTimer() {
+      if (registrationCooldownTimer) {
+        window.clearInterval(registrationCooldownTimer);
+      }
+
+      refreshRegistrationCooldownUi();
+
+      registrationCooldownTimer = window.setInterval(
+        refreshRegistrationCooldownUi,
+        1000
+      );
+    }
+
+    function isAuthRateLimitError(error) {
+      const message = String(error?.message || "").toLowerCase();
+      const code = String(error?.code || "").toLowerCase();
+      const status = Number(error?.status || 0);
+
+      return (
+        status === 429 ||
+        message.includes("rate limit") ||
+        message.includes("too many requests") ||
+        message.includes("email rate limit") ||
+        code.includes("over_email_send_rate_limit") ||
+        code.includes("over_request_rate_limit")
+      );
+    }
+
+    function showEmailConfirmDialog(
+      email,
+      { rateLimited = false, resent = false } = {}
+    ) {
       const normalizedEmail = String(email || "").trim();
       const isGmail = /@gmail\.com$/i.test(normalizedEmail);
+
+      pendingRegistrationEmail = normalizedEmail;
 
       emailConfirmTitle.textContent = isGmail
         ? "Проверь Gmail"
         : "Проверь электронную почту";
 
+      emailConfirmDescription.textContent = rateLimited
+        ? "Повторный запрос пока ограничен. Письмо могло быть отправлено раньше — проверь почту:"
+        : resent
+          ? "Новое письмо подтверждения отправлено на:"
+          : "Мы отправили письмо для подтверждения аккаунта на:";
+
       emailConfirmAddress.textContent = normalizedEmail;
       openGmailButton.hidden = !isGmail;
+      startRegistrationCooldownTimer();
 
       if (typeof emailConfirmDialog.showModal === "function") {
         if (!emailConfirmDialog.open) {
@@ -9523,7 +9792,7 @@ const myJokes = document.getElementById("myJokes");
         }
       } else {
         alert(
-          `Аккаунт создан. Проверь почту ${normalizedEmail} и подтверди регистрацию.`
+          `Проверь почту ${normalizedEmail} и подтверди регистрацию.`
         );
       }
     }
@@ -9549,9 +9818,14 @@ const myJokes = document.getElementById("myJokes");
       authStatus.dataset.type = "";
     }
 
-    function setAuthLoading(button, loading, idleText) {
+    function setAuthLoading(
+      button,
+      loading,
+      idleText,
+      loadingText = "Подождите..."
+    ) {
       button.disabled = loading;
-      button.textContent = loading ? "Подождите..." : idleText;
+      button.textContent = loading ? loadingText : idleText;
     }
 
     function switchAuthView(view) {
@@ -9581,11 +9855,13 @@ const myJokes = document.getElementById("myJokes");
 
     function showAuthenticatedApp() {
       authGate.hidden = true;
+      banGate.hidden = true;
       document.body.classList.remove("auth-locked");
     }
 
     function showAuthGate(view = "login") {
       document.body.classList.add("auth-locked");
+      banGate.hidden = true;
       authGate.hidden = false;
       switchAuthView(view);
     }
@@ -9605,8 +9881,12 @@ const myJokes = document.getElementById("myJokes");
       if (message.includes("password")) {
         return "Проверь пароль. Он должен содержать не менее 6 символов.";
       }
-      if (message.includes("rate limit")) {
-        return "Слишком много попыток. Подожди немного и попробуй снова.";
+      if (
+        message.includes("rate limit") ||
+        message.includes("too many requests") ||
+        String(error?.status || "") === "429"
+      ) {
+        return "Повторная отправка временно ограничена. Проверь почту: письмо могло прийти после первой попытки.";
       }
 
       return error?.message || "Произошла ошибка. Попробуй ещё раз.";
@@ -9696,19 +9976,98 @@ const myJokes = document.getElementById("myJokes");
       settingsAccountEmail.textContent = user.email || "Почта не указана";
     }
 
+    async function getMyBanStatus() {
+      try {
+        const { data, error } = await supabaseClient.rpc(
+          "smesno_my_ban_status"
+        );
+
+        if (error) {
+          const message = String(error.message || "").toLowerCase();
+
+          if (
+            message.includes("could not find the function") ||
+            message.includes("schema cache")
+          ) {
+            return { is_banned: false };
+          }
+
+          throw error;
+        }
+
+        return data || { is_banned: false };
+      } catch (error) {
+        console.warn("Ban status check error:", error);
+        return { is_banned: false };
+      }
+    }
+
+    function stopBanStatusChecks() {
+      if (banStatusTimer) {
+        window.clearInterval(banStatusTimer);
+        banStatusTimer = null;
+      }
+    }
+
+    function showBanGate(status = {}) {
+      stopBanStatusChecks();
+      authGate.hidden = true;
+      banGate.hidden = false;
+      document.body.classList.add("auth-locked");
+
+      const reason = String(status.reason || "").trim();
+      banReasonText.textContent = reason
+        ? `Причина: ${reason}`
+        : "Причина не указана. Свяжись с администратором сайта.";
+    }
+
+    async function verifyCurrentBanStatus() {
+      if (!currentAuthUser) return false;
+
+      const status = await getMyBanStatus();
+
+      if (status?.is_banned) {
+        showBanGate(status);
+        return true;
+      }
+
+      return false;
+    }
+
+    function startBanStatusChecks() {
+      stopBanStatusChecks();
+
+      banStatusTimer = window.setInterval(
+        verifyCurrentBanStatus,
+        120000
+      );
+    }
+
     async function handleAuthenticatedSession(session) {
       if (!session?.user) {
         currentAuthUser = null;
         currentDatabaseProfile = null;
+        stopBanStatusChecks();
+        banGate.hidden = true;
         showAuthGate("login");
         return;
       }
 
       try {
+        currentAuthUser = session.user;
+        const banStatus = await getMyBanStatus();
+
+        if (banStatus?.is_banned) {
+          showBanGate(banStatus);
+          return;
+        }
+
+        banGate.hidden = true;
         const profile = await ensureDatabaseProfile(session.user);
         applyAuthenticatedProfile(session.user, profile);
         await initializeSharedJokes();
         showAuthenticatedApp();
+        startBanStatusChecks();
         renderProfile();
       } catch (error) {
         showAuthGate("login");
@@ -9726,6 +10085,66 @@ const myJokes = document.getElementById("myJokes");
         "_blank",
         "noopener,noreferrer"
       );
+    });
+
+
+    resendConfirmationButton.addEventListener("click", async () => {
+      if (!pendingRegistrationEmail) return;
+
+      const seconds = getRegistrationCooldownSeconds();
+
+      if (seconds > 0) {
+        startRegistrationCooldownTimer();
+        return;
+      }
+
+      resendConfirmationButton.disabled = true;
+      resendConfirmationButton.textContent = "Отправляем…";
+
+      try {
+        const { error } = await supabaseClient.auth.resend({
+          type: "signup",
+          email: pendingRegistrationEmail,
+          options: {
+            emailRedirectTo: getAuthRedirectUrl()
+          }
+        });
+
+        rememberRegistrationCooldown(pendingRegistrationEmail);
+
+        if (error) throw error;
+
+        showEmailConfirmDialog(
+          pendingRegistrationEmail,
+          { resent: true }
+        );
+      } catch (error) {
+        rememberRegistrationCooldown(pendingRegistrationEmail);
+        showEmailConfirmDialog(
+          pendingRegistrationEmail,
+          { rateLimited: isAuthRateLimitError(error) }
+        );
+      } finally {
+        resendConfirmationButton.textContent =
+          "Отправить письмо ещё раз";
+        refreshRegistrationCooldownUi();
+      }
+    });
+
+    banSignOutButton.addEventListener("click", async () => {
+      banSignOutButton.disabled = true;
+      banSignOutButton.textContent = "Выходим…";
+
+      try {
+        await supabaseClient.auth.signOut();
+      } finally {
+        currentAuthUser = null;
+        currentDatabaseProfile = null;
+        banGate.hidden = true;
+        showAuthGate("login");
+        banSignOutButton.disabled = false;
+        banSignOutButton.textContent = "Выйти из аккаунта";
+      }
     });
 
     emailConfirmDoneButton.addEventListener(
@@ -9790,6 +10209,9 @@ const myJokes = document.getElementById("myJokes");
 
     registerForm.addEventListener("submit", async event => {
       event.preventDefault();
+
+      if (registrationRequestInFlight) return;
+
       clearAuthStatus();
 
       if (!registerForm.reportValidity()) return;
@@ -9818,7 +10240,28 @@ const myJokes = document.getElementById("myJokes");
         return;
       }
 
-      setAuthLoading(registerSubmit, true, "Создать аккаунт");
+      const cooldownSeconds =
+        getRegistrationCooldownSeconds(registrationEmail);
+
+      if (cooldownSeconds > 0) {
+        pendingRegistrationEmail = registrationEmail;
+        setAuthStatus(
+          `Запрос уже отправлялся. Проверь почту или подожди ${cooldownSeconds} сек.`,
+          "info"
+        );
+        showEmailConfirmDialog(registrationEmail, {
+          rateLimited: true
+        });
+        return;
+      }
+
+      registrationRequestInFlight = true;
+      setAuthLoading(
+        registerSubmit,
+        true,
+        "Создать аккаунт",
+        "Создаём аккаунт…"
+      );
 
       try {
         const available = await usernameIsAvailable(username);
@@ -9828,16 +10271,14 @@ const myJokes = document.getElementById("myJokes");
           return;
         }
 
-        const redirectTo =
-          window.location.protocol === "file:"
-            ? undefined
-            : window.location.origin + window.location.pathname;
+        rememberRegistrationCooldown(registrationEmail);
+        pendingRegistrationEmail = registrationEmail;
 
         const { data, error } = await supabaseClient.auth.signUp({
           email: registrationEmail,
           password,
           options: {
-            emailRedirectTo: redirectTo,
+            emailRedirectTo: getAuthRedirectUrl(),
             data: {
               display_name: displayName,
               username
@@ -9855,15 +10296,43 @@ const myJokes = document.getElementById("myJokes");
           switchAuthView("login");
           loginEmail.value = registrationEmail;
           setAuthStatus(
-            "Аккаунт создан. Подтверди электронную почту, затем войди.",
+            "Письмо отправлено. Подтверди электронную почту, затем войди.",
             "success"
           );
           showEmailConfirmDialog(registrationEmail);
         }
       } catch (error) {
-        setAuthStatus(authErrorMessage(error), "error");
+        if (isAuthRateLimitError(error)) {
+          rememberRegistrationCooldown(registrationEmail);
+          pendingRegistrationEmail = registrationEmail;
+          setAuthStatus(
+            "Повторная отправка временно ограничена. Проверь почту — письмо могло прийти после первой попытки.",
+            "info"
+          );
+          showEmailConfirmDialog(registrationEmail, {
+            rateLimited: true
+          });
+        } else {
+          const message = String(error?.message || "").toLowerCase();
+
+          if (message.includes("user already registered")) {
+            switchAuthView("login");
+            loginEmail.value = registrationEmail;
+            setAuthStatus(
+              "Аккаунт с этой почтой уже существует. Войди или восстанови пароль.",
+              "info"
+            );
+          } else {
+            setAuthStatus(authErrorMessage(error), "error");
+          }
+        }
       } finally {
-        setAuthLoading(registerSubmit, false, "Создать аккаунт");
+        registrationRequestInFlight = false;
+        setAuthLoading(
+          registerSubmit,
+          false,
+          "Создать аккаунт"
+        );
       }
     });
 
@@ -9950,6 +10419,8 @@ const myJokes = document.getElementById("myJokes");
       signOutButton.textContent = "Выходим...";
 
       try {
+        stopBanStatusChecks();
+
         if (sharedJokesChannel) {
           await supabaseClient.removeChannel(
             sharedJokesChannel
@@ -9999,6 +10470,7 @@ const myJokes = document.getElementById("myJokes");
 
     window.addEventListener("focus", () => {
       refreshVisibleProfileCovers();
+      verifyCurrentBanStatus();
     });
 
     document.addEventListener(

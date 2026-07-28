@@ -951,6 +951,134 @@
       }
     }
 
+
+    .pill-stack {
+      display: grid;
+      justify-items: start;
+      gap: 6px;
+    }
+
+    .pill.banned {
+      color: #a92950;
+      border-color: rgba(218, 70, 105, .20);
+      background: rgba(218, 70, 105, .10);
+    }
+
+    .admin-ban-card {
+      margin: 22px 0;
+      padding: 18px;
+      border: 1px solid rgba(218, 70, 105, .18);
+      border-radius: 22px;
+      background: rgba(218, 70, 105, .055);
+    }
+
+    .admin-ban-card[data-banned="true"] {
+      border-color: rgba(218, 70, 105, .33);
+      background: rgba(218, 70, 105, .10);
+    }
+
+    .admin-ban-heading {
+      margin-bottom: 13px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .admin-ban-heading strong,
+    .admin-ban-heading span {
+      display: block;
+    }
+
+    .admin-ban-heading strong {
+      font-size: 16px;
+    }
+
+    .admin-ban-heading span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .admin-ban-state {
+      flex: 0 0 auto;
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: #547087;
+      background: rgba(84,112,135,.10);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .admin-ban-card[data-banned="true"] .admin-ban-state {
+      color: #a92950;
+      background: rgba(218,70,105,.12);
+    }
+
+    .admin-ban-reason {
+      width: 100%;
+      min-height: 82px;
+      resize: vertical;
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      color: var(--text);
+      background: var(--surface-2);
+      font: inherit;
+      line-height: 1.45;
+    }
+
+    .admin-ban-actions {
+      margin-top: 11px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .admin-ban-button,
+    .admin-unban-button {
+      min-height: 46px;
+      border-radius: 15px;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .admin-ban-button {
+      border: 0;
+      color: #fff;
+      background: linear-gradient(135deg, #d7456d, #9f4de5);
+    }
+
+    .admin-unban-button {
+      border: 1px solid rgba(112,80,255,.20);
+      color: var(--primary);
+      background: rgba(112,80,255,.08);
+    }
+
+    .admin-ban-button:disabled,
+    .admin-unban-button:disabled {
+      opacity: .48;
+      cursor: not-allowed;
+    }
+
+    .admin-ban-status {
+      min-height: 18px;
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .admin-ban-status[data-type="success"] { color: #21865e; }
+    .admin-ban-status[data-type="error"] { color: #b33158; }
+
+    @media (max-width: 520px) {
+      .admin-ban-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -1076,6 +1204,12 @@
           <span class="stat-label">Комментарии</span>
           <strong id="commentsStat" class="stat-value">—</strong>
           <span class="stat-note">Обсуждения пользователей</span>
+        </article>
+
+        <article class="stat-card glass">
+          <span class="stat-label">Заблокированы</span>
+          <strong id="bannedUsersStat" class="stat-value">—</strong>
+          <span class="stat-note">Активные блокировки</span>
         </article>
       </div>
 
@@ -1217,6 +1351,8 @@
     const commentsStat =
       document.getElementById("commentsStat");
 
+    const bannedUsersStat =
+      document.getElementById("bannedUsersStat");
     const usersSubtitle =
       document.getElementById("usersSubtitle");
     const searchInput =
@@ -1438,6 +1574,10 @@
       commentsStat.textContent =
         Number(data?.comments_count || 0)
           .toLocaleString("ru-RU");
+
+      bannedUsersStat.textContent =
+        Number(data?.banned_users || 0)
+          .toLocaleString("ru-RU");
     }
 
     function avatarMarkup(user, large = false) {
@@ -1506,9 +1646,14 @@
                 >${escapeHtml(user.email || "—")}</td>
 
                 <td>
-                  <span class="pill ${user.email_confirmed ? "confirmed" : "pending"}">
-                    ${user.email_confirmed ? "Подтверждён" : "Ожидает"}
-                  </span>
+                  <div class="pill-stack">
+                    <span class="pill ${user.email_confirmed ? "confirmed" : "pending"}">
+                      ${user.email_confirmed ? "Подтверждён" : "Ожидает"}
+                    </span>
+                    ${user.is_banned
+                      ? '<span class="pill banned">Заблокирован</span>'
+                      : ''}
+                  </div>
                 </td>
 
                 <td>${escapeHtml(formatDate(user.registered_at))}</td>
@@ -1722,6 +1867,57 @@
           ></div>
         </section>
 
+        <section
+          id="adminBanCard"
+          class="admin-ban-card"
+          data-banned="${user.is_banned ? "true" : "false"}"
+        >
+          <div class="admin-ban-heading">
+            <div>
+              <strong>Управление доступом</strong>
+              <span>
+                Заблокированный пользователь не сможет публиковать,
+                комментировать, ставить реакции, подписываться и отправлять сообщения.
+                Его анекдоты и комментарии будут скрыты.
+              </span>
+            </div>
+            <span id="adminBanState" class="admin-ban-state">
+              ${user.is_banned ? "Заблокирован" : "Активен"}
+            </span>
+          </div>
+
+          <textarea
+            id="adminBanReason"
+            class="admin-ban-reason"
+            maxlength="300"
+            placeholder="Причина блокировки"
+          >${escapeHtml(user.ban_reason || "")}</textarea>
+
+          <div class="admin-ban-actions">
+            <button
+              id="adminBanButton"
+              class="admin-ban-button"
+              type="button"
+              ${user.is_banned ? "disabled" : ""}
+            >Заблокировать</button>
+
+            <button
+              id="adminUnbanButton"
+              class="admin-unban-button"
+              type="button"
+              ${user.is_banned ? "" : "disabled"}
+            >Разблокировать</button>
+          </div>
+
+          <div
+            id="adminBanStatus"
+            class="admin-ban-status"
+            aria-live="polite"
+          >${user.is_banned && user.banned_at
+            ? `Заблокирован: ${escapeHtml(formatDate(user.banned_at, true))}`
+            : ""}</div>
+        </section>
+
         <div class="details-grid">
           <div class="detail full">
             <span>Email</span>
@@ -1790,6 +1986,12 @@
       const coverSaveButton = document.getElementById("adminCoverSaveButton");
       const coverRemoveButton = document.getElementById("adminCoverRemoveButton");
       const coverStatus = document.getElementById("adminCoverStatus");
+      const adminBanCard = document.getElementById("adminBanCard");
+      const adminBanState = document.getElementById("adminBanState");
+      const adminBanReason = document.getElementById("adminBanReason");
+      const adminBanButton = document.getElementById("adminBanButton");
+      const adminUnbanButton = document.getElementById("adminUnbanButton");
+      const adminBanStatus = document.getElementById("adminBanStatus");
       let selectedCoverFile = null;
       let localPreviewUrl = null;
 
@@ -1972,6 +2174,101 @@
           );
         } finally {
           coverRemoveButton.disabled = false;
+        }
+      });
+
+      function setBanStatus(message = "", type = "") {
+        adminBanStatus.textContent = message;
+        adminBanStatus.dataset.type = type;
+      }
+
+      function updateBanControls(isBanned) {
+        user.is_banned = isBanned;
+        adminBanCard.dataset.banned = String(isBanned);
+        adminBanState.textContent = isBanned
+          ? "Заблокирован"
+          : "Активен";
+        adminBanButton.disabled = isBanned;
+        adminUnbanButton.disabled = !isBanned;
+      }
+
+      adminBanButton.addEventListener("click", async () => {
+        const reason = adminBanReason.value.trim();
+
+        if (!reason) {
+          setBanStatus("Укажи причину блокировки.", "error");
+          adminBanReason.focus();
+          return;
+        }
+
+        if (!confirm(`Заблокировать ${user.email || displayName}?`)) {
+          return;
+        }
+
+        adminBanButton.disabled = true;
+        adminUnbanButton.disabled = true;
+        setBanStatus("Блокируем пользователя…");
+
+        try {
+          const { data, error } = await supabaseClient.rpc(
+            "smesno_admin_ban_user",
+            {
+              p_user_id: user.id,
+              p_reason: reason
+            }
+          );
+
+          if (error) throw error;
+
+          user.is_banned = true;
+          user.ban_reason = reason;
+          user.banned_at = data?.banned_at || new Date().toISOString();
+          updateBanControls(true);
+          setBanStatus("Пользователь заблокирован.", "success");
+          await Promise.all([loadStats(), loadUsers()]);
+        } catch (error) {
+          console.error(error);
+          setBanStatus(
+            String(error?.message || "").includes("cannot_ban_admin")
+              ? "Администратора блокировать нельзя."
+              : error.message || "Не удалось заблокировать пользователя.",
+            "error"
+          );
+          updateBanControls(Boolean(user.is_banned));
+        }
+      });
+
+      adminUnbanButton.addEventListener("click", async () => {
+        if (!confirm(`Разблокировать ${user.email || displayName}?`)) {
+          return;
+        }
+
+        adminBanButton.disabled = true;
+        adminUnbanButton.disabled = true;
+        setBanStatus("Снимаем блокировку…");
+
+        try {
+          const { error } = await supabaseClient.rpc(
+            "smesno_admin_unban_user",
+            { p_user_id: user.id }
+          );
+
+          if (error) throw error;
+
+          user.is_banned = false;
+          user.ban_reason = null;
+          user.banned_at = null;
+          adminBanReason.value = "";
+          updateBanControls(false);
+          setBanStatus("Пользователь разблокирован.", "success");
+          await Promise.all([loadStats(), loadUsers()]);
+        } catch (error) {
+          console.error(error);
+          setBanStatus(
+            error.message || "Не удалось снять блокировку.",
+            "error"
+          );
+          updateBanControls(Boolean(user.is_banned));
         }
       });
 
